@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>學生座位排列系統</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;color:#333;font-size:16px}
+:root{
+  --sidebar:320px;
+  --seat-w:72px;
+  --seat-h:62px;
+  --seat-font:0.78rem;
+  --seat-gap:6px;
+}
+@media(max-width:900px){:root{--sidebar:100%;--seat-w:64px;--seat-h:56px;--seat-font:0.72rem}}
+
+.header{background:linear-gradient(135deg,#2c7a7b,#3d9a9b);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.2);position:sticky;top:0;z-index:100}
+.header h1{font-size:clamp(1rem,3vw,1.4rem);font-weight:700}
+.container{display:flex;flex-wrap:wrap;min-height:calc(100vh - 52px)}
+.sidebar{width:var(--sidebar);background:#fff;padding:16px;overflow-y:auto;border-right:1px solid #dde3ea;display:flex;flex-direction:column;gap:14px;max-height:calc(100vh - 52px);position:sticky;top:52px}
+@media(max-width:900px){.sidebar{position:static;max-height:none;border-right:none;border-bottom:2px solid #dde3ea}}
+.main{flex:1;min-width:0;padding:16px;overflow-x:auto}
+.card{background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);border:1px solid #e8edf2}
+.card-title{font-size:.8rem;font-weight:700;color:#2c7a7b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.btn{padding:7px 14px;border:none;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600;transition:all .2s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.btn-primary{background:#2c7a7b;color:#fff}.btn-primary:hover{background:#235f60}
+.btn-success{background:#38a169;color:#fff}.btn-success:hover{background:#2f855a}
+.btn-warning{background:#d69e2e;color:#fff}.btn-warning:hover{background:#b7791f}
+.btn-danger{background:#e53e3e;color:#fff}.btn-danger:hover{background:#c53030}
+.btn-gray{background:#718096;color:#fff}.btn-gray:hover{background:#4a5568}
+.btn-outline{background:#fff;color:#2c7a7b;border:1.5px solid #2c7a7b}.btn-outline:hover{background:#e6f7f7}
+.btn-sm{padding:5px 10px;font-size:.76rem}
+.btn-full{width:100%;justify-content:center}
+.btn-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+label.lbl{font-size:.8rem;font-weight:600;color:#555;display:block;margin-bottom:4px}
+input[type=text],select,textarea{width:100%;padding:7px 10px;border:1.5px solid #dde3ea;border-radius:6px;font-size:.83rem;background:#fafbfc;transition:border .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#2c7a7b;background:#fff}
+textarea{resize:vertical;min-height:80px;font-family:monospace}
+.opt-item{display:flex;align-items:center;gap:8px;cursor:pointer;padding:7px 10px;border-radius:7px;border:1.5px solid #e2e8f0;transition:all .2s;margin-bottom:5px;user-select:none}
+.opt-item:hover{border-color:#2c7a7b;background:#f0fafa}
+.opt-item.selected{border-color:#2c7a7b;background:#e6f7f7}
+.opt-item input[type=checkbox]{accent-color:#2c7a7b;width:15px;height:15px;flex-shrink:0}
+.opt-item input[type=radio]{accent-color:#2c7a7b}
+.opt-item span{font-size:.83rem;font-weight:500}
+.toggle-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:7px;border:1.5px solid #e2e8f0;background:#fffaf0;margin-top:4px}
+.toggle-row.active{border-color:#d69e2e;background:#fff8e1}
+.toggle{position:relative;width:40px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:#ccc;border-radius:22px;cursor:pointer;transition:.3s}
+.toggle-slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s}
+input:checked+.toggle-slider{background:#d69e2e}
+input:checked+.toggle-slider:before{transform:translateX(18px)}
+.toggle-label{font-size:.83rem;font-weight:600;color:#7b341e}
+.cap-bar{height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;margin-top:6px}
+.cap-fill{height:100%;border-radius:4px;transition:width .4s}
+.cap-fill.ok{background:#38a169}.cap-fill.warn{background:#d69e2e}.cap-fill.over{background:#e53e3e}
+.cap-text{font-size:.75rem;color:#666;margin-top:3px}
+.tags{display:flex;flex-wrap:wrap;gap:4px;max-height:90px;overflow-y:auto;margin-top:6px}
+.tag{background:#e6f7f7;color:#2c7a7b;padding:2px 8px;border-radius:12px;font-size:.72rem;font-weight:600}
+.tabs{display:flex;gap:4px;border-bottom:2px solid #e2e8f0;margin-bottom:14px}
+.tab{padding:7px 14px;font-size:.82rem;font-weight:600;color:#888;cursor:pointer;border-radius:6px 6px 0 0;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
+.tab.active{color:#2c7a7b;border-bottom-color:#2c7a7b;background:#f0fafa}
+.tab:hover:not(.active){color:#555;background:#f7f7f7}
+.alert{padding:10px 14px;border-radius:8px;font-size:.82rem;font-weight:500;margin-bottom:8px}
+.alert-info{background:#ebf8ff;color:#2b6cb0;border:1px solid #bee3f8}
+.alert-success{background:#f0fff4;color:#276749;border:1px solid #9ae6b4}
+.alert-warning{background:#fffaf0;color:#7b341e;border:1px solid #fbd38d}
+.alert-error{background:#fff5f5;color:#c53030;border:1px solid #feb2b2}
+.cls-view{background:#f7fafc;border-radius:10px;padding:16px;border:1px solid #e2e8f0;margin-bottom:16px;overflow-x:auto}
+.cls-title{text-align:center;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px}
+.cls-badge{font-size:.95rem;font-weight:700;color:#2c7a7b;padding:5px 18px;background:#fff;border:2px solid #2c7a7b;border-radius:8px}
+.cls-stat{font-size:.75rem;color:#888;background:#f0fafa;padding:3px 10px;border-radius:12px;border:1px solid #e2e8f0}
+.stage{background:linear-gradient(135deg,#2c7a7b,#3d9a9b);color:#fff;text-align:center;padding:8px;border-radius:7px;font-weight:700;font-size:.85rem;margin-bottom:14px;letter-spacing:2px}
+.cls-center{display:flex;flex-direction:column;align-items:center;width:100%}
+
+/* ── 座位格 ── */
+.seat{
+  width:var(--seat-w);
+  min-width:var(--seat-w);
+  height:var(--seat-h);
+  padding:5px 4px;
+  border-radius:7px;
+  border:1.5px solid #b2d8d8;
+  background:#fff;
+  cursor:pointer;
+  transition:all .2s;
+  text-align:center;
+  font-size:var(--seat-font);
+  line-height:1.35;
+  flex-shrink:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:1px;
+}
+.seat:hover{border-color:#2c7a7b;box-shadow:0 2px 8px rgba(44,122,123,.25);transform:translateY(-1px)}
+.seat.occupied{background:#e6f7f7;border-color:#2c7a7b}
+.seat.quincunx{background:#fff8e1;border-color:#d69e2e}
+.seat.empty{background:#f9f9f9;border-color:#ddd;color:#bbb}
+.seat-num{font-size:.58rem;color:#bbb;line-height:1;margin-bottom:1px}
+.seat-name{font-weight:700;color:#2c7a7b;font-size:var(--seat-font);word-break:break-all;line-height:1.3}
+.seat-id{font-size:.62rem;color:#888;line-height:1.2}
+
+.teacher-pc{
+  background:#374151;color:#fff;border-radius:7px;
+  padding:6px 4px;font-size:.65rem;font-weight:700;
+  text-align:center;
+  width:var(--seat-w);min-width:var(--seat-w);
+  height:var(--seat-h);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;line-height:1.3;
+}
+
+/* EL310 */
+.el310-outer{display:inline-flex;flex-direction:column;align-items:flex-start}
+.el310-headers{display:flex;gap:var(--seat-gap);margin-bottom:5px;align-items:flex-end}
+.el310-body{display:flex;gap:var(--seat-gap);align-items:flex-start}
+.el310-col{display:flex;flex-direction:column;gap:var(--seat-gap);align-items:center}
+.el310-col-lbl{text-align:center;font-size:.7rem;font-weight:700;color:#555;width:var(--seat-w);min-width:var(--seat-w)}
+
+/* EB106 */
+.eb106{display:flex;flex-direction:column;align-items:center;gap:var(--seat-gap);width:100%}
+.eb106-row{display:flex;justify-content:center;align-items:flex-start;gap:10px;width:100%}
+.eb106-block{display:flex;gap:var(--seat-gap)}
+
+/* EL104 */
+.el104{display:flex;gap:10px;justify-content:center;align-items:flex-start}
+.el104-col{display:flex;flex-direction:column;gap:var(--seat-gap);align-items:center}
+.el104-col-lbl{font-size:.7rem;font-weight:700;color:#888;margin-bottom:2px;text-align:center}
+.desk{display:flex;gap:var(--seat-gap)}
+
+.no-result{text-align:center;padding:40px 20px;color:#aaa;font-size:.9rem}
+.no-result .icon{font-size:3rem;margin-bottom:8px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;justify-content:center;align-items:center;padding:16px}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:12px;padding:22px;max-width:460px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto}
+.modal h3{font-size:1rem;font-weight:700;color:#2c7a7b;margin-bottom:12px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.form-group{margin-bottom:10px}
+.exp-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.exp-table th{background:#2c7a7b;color:#fff;padding:7px 10px;text-align:left}
+.exp-table td{padding:6px 10px;border-bottom:1px solid #e2e8f0}
+.exp-table tr:hover td{background:#f0fafa}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:#f1f1f1}
+::-webkit-scrollbar-thumb{background:#b2d8d8;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="header"><span>🎓</span><h1>學生座位排列系統</h1></div>
+<div class="container">
+<div class="sidebar">
+  <div class="card">
+    <div class="card-title">📋 學生名單</div>
+    <label class="lbl">貼上名單（每行：學號 姓名 或 只有姓名）</label>
+    <textarea id="studentInput" placeholder="B11234 王小明&#10;B11235 李小華"></textarea>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" onclick="parseStudents()">✅ 載入</button>
+      <button class="btn btn-outline btn-sm" onclick="loadSample()">📝 範例</button>
+      <button class="btn btn-gray btn-sm" onclick="clearStudents()">🗑 清除</button>
+    </div>
+    <div id="stuInfo" style="font-size:.75rem;color:#666;margin-top:6px"></div>
+    <div id="stuTags" class="tags"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">🏫 選擇教室（可多選）</div>
+    <div id="clsList"></div>
+    <div class="btn-row"><button class="btn btn-outline btn-sm" onclick="openAddCls()">➕ 新增教室</button></div>
+    <div id="capWrap" style="display:none;margin-top:8px">
+      <div class="cap-bar"><div class="cap-fill" id="capFill"></div></div>
+      <div class="cap-text" id="capText"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">⚙️ 排列方式</div>
+    <div class="opt-item selected" id="opt-order" onclick="selMode('order')">
+      <input type="radio" name="mode" value="order" checked><span>📊 依學號排列</span>
+    </div>
+    <div class="opt-item" id="opt-random" onclick="selMode('random')">
+      <input type="radio" name="mode" value="random"><span>🎲 隨機排列</span>
+    </div>
+    <div class="opt-item" id="opt-name" onclick="selMode('name')">
+      <input type="radio" name="mode" value="name"><span>🔤 依姓名排列</span>
+    </div>
+    <div class="toggle-row" id="quincunxToggleRow">
+      <label class="toggle">
+        <input type="checkbox" id="quincunxToggle" onchange="onQuincunxToggle()">
+        <span class="toggle-slider"></span>
+      </label>
+      <span class="toggle-label">🌸 梅花座（前後左右不相鄰）</span>
+    </div>
+    <div id="quincunxInfo" style="font-size:.75rem;color:#888;margin-top:4px;display:none;padding:0 4px">
+      每個有人的座位，其上下左右四格皆為空位
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-full" onclick="assignSeats()">🪑 開始排座位</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">💾 匯出 / 操作</div>
+    <div class="btn-row">
+      <button class="btn btn-success btn-sm" onclick="exportCSV()">📥 CSV</button>
+      <button class="btn btn-warning btn-sm" onclick="exportPrint()">🖨 列印</button>
+      <button class="btn btn-danger btn-sm" onclick="resetAll()">🔄 重設</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div id="alertArea"></div>
+  <div class="tabs">
+    <div class="tab active" id="tab-seat" onclick="switchTab('seat')">🪑 座位圖</div>
+    <div class="tab" id="tab-list" onclick="switchTab('list')">📋 名單列表</div>
+  </div>
+  <div id="view-seat">
+    <div id="clsViews">
+      <div class="no-result"><div class="icon">🏫</div>請先選擇教室並載入學生名單，<br>然後點擊「開始排座位」</div>
+    </div>
+  </div>
+  <div id="view-list" style="display:none">
+    <div class="card">
+      <div class="card-title">📋 座位名單</div>
+      <div id="listContent"><div class="no-result"><div class="icon">📋</div>尚未排列座位</div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="modal-overlay" id="addClsModal">
+  <div class="modal">
+    <h3>➕ 新增教室</h3>
+    <div class="form-group"><label class="lbl">教室名稱</label><input type="text" id="newClsName" placeholder="例如：EB107"></div>
+    <div class="form-group">
+      <label class="lbl">座位配置（每行一排，數字為各區塊座位數，逗號分隔）</label>
+      <textarea id="newClsLayout" placeholder="2,2,2,0&#10;3,3,3,3" style="min-height:90px"></textarea>
+      <div style="font-size:.72rem;color:#888;margin-top:3px">0 = 該排該區塊無座位</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-gray" onclick="closeModal('addClsModal')">取消</button>
+      <button class="btn btn-primary" onclick="addCls()">新增</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="seatModal">
+  <div class="modal">
+    <h3>✏️ 編輯座位</h3>
+    <div id="seatModalInfo" style="font-size:.82rem;color:#666;margin-bottom:10px"></div>
+    <div class="form-group"><label class="lbl">指派學生</label>
+      <select id="seatSelect"><option value="">-- 空座位 --</option></select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-gray" onclick="closeModal('seatModal')">取消</button>
+      <button class="btn btn-danger btn-sm" onclick="clearSeat()">清除</button>
+      <button class="btn btn-primary" onclick="saveSeat()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SEAT_W = 72;
+const SEAT_H = 62;
+const SEAT_GAP = 6;
+const SLOT_H = SEAT_H + SEAT_GAP;
+
+const CLASSROOMS = [
+  {
+    id:'EB106', name:'EB106', type:'fan',
+    layout:[
+      {row:1, blocks:[2,2,2,0]},
+      {row:2, blocks:[3,3,3,3]},
+      {row:3, blocks:[4,4,4,3]},
+      {row:4, blocks:[5,5,5,3]},
+      {row:5, blocks:[6,6,6,3]},
+      {row:6, blocks:[7,7,7,2]},
+    ]
+  },
+  {
+    id:'EL104', name:'EL104', type:'grid',
+    rows:9,
+    cols:[
+      {label:'側走道', type:'single', startRow:2, endRow:7},
+      {label:'A排',   type:'desk',   startRow:1, endRow:9},
+      {label:'B排',   type:'desk',   startRow:1, endRow:9},
+      {label:'C排',   type:'desk',   startRow:1, endRow:9},
+      {label:'D排',   type:'desk',   startRow:1, endRow:9},
+    ]
+  },
+  {
+    id:'EL308', name:'EL308', type:'el308',
+    maxRows: 6,
+    cols:[
+      { label:'A排', rows:5 },
+      { label:'B排', rows:6 },
+      { label:'C排', rows:6 },
+      { label:'D排', rows:6 },
+      { label:'E排', rows:6 },
+      { label:'F排', rows:3 },
+    ]
+  },
+  {
+    id:'EL310', name:'EL310', type:'el310',
+    maxRows: 12,
+    segments:[
+      { label:'A排',   type:'single',  startSlot:1, rows:12 },
+      { label:'',      type:'aisle' },
+      { label:'B排',   type:'single',  startSlot:2, rows:10 },
+      { label:'C排',   type:'single',  startSlot:2, rows:10 },
+      { label:'D排',   type:'single',  startSlot:2, rows:10 },
+      { label:'',      type:'aisle' },
+      { label:'教師機', type:'teacher', startSlot:1, rows:1  },
+      { label:'E排',   type:'single',  startSlot:2, rows:9  },
+      { label:'F排',   type:'single',  startSlot:2, rows:8  },
+    ]
+  }
+];
+let customCls=[];
+let students=[];
+let selectedCls=new Set();
+let seatMap={};
+let editSeatKey=null,editSeatCls=null;
+let currentMode='order';
+let quincunxOn=false;
+
+function init(){ renderClsList(); }
+function allClassrooms(){ return [...CLASSROOMS,...customCls]; }
+
+function getCapacity(cls){
+  if(cls.type==='fan') return cls.layout.reduce((s,r)=>s+r.blocks.reduce((a,b)=>a+b,0),0);
+  if(cls.type==='grid'){ let c=0; cls.cols.forEach(col=>{ const rows=col.endRow-col.startRow+1; c+=col.type==='single'?rows:rows*2; }); return c; }
+  if(cls.type==='el308') return cls.cols.reduce((s,c)=>s+c.rows,0);
+  if(cls.type==='el310'){ let c=0; cls.segments.forEach(seg=>{ if(seg.type==='aisle'||seg.type==='teacher') return; c+=seg.rows; }); return c; }
+  return 0;
+}
+
+function getTotalSelectedCap(){
+  return [...selectedCls].reduce((s,id)=>{ const c=allClassrooms().find(x=>x.id===id); return s+(c?getCapacity(c):0); },0);
+}
+
+function parseStudents(){
+  const raw=document.getElementById('studentInput').value.trim();
+  if(!raw){showAlert('請輸入學生名單','warning');return;}
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  students=lines.map((l,i)=>{ const parts=l.split(/\s+/); if(parts.length>=2) return {id:parts[0],name:parts.slice(1).join(' ')}; return {id:`S${String(i+1).padStart(3,'0')}`,name:parts[0]}; });
+  renderStuTags(); updateCapBar();
+  showAlert(`✅ 已載入 ${students.length} 位學生`,'success');
+}
+
+function loadSample(){
+  const names=['王小明','李小華','張大偉','陳美玲','林志豪','黃雅婷','吳建宏','劉淑芬','蔡宗翰','鄭佳穎','許志明','謝雨晴','楊俊傑','周淑娟','洪建志','邱雅雯','曾志遠','廖美慧','彭建國','盧淑惠','蕭志偉','江雅琪','何建平','鍾美珍','余志強'];
+  document.getElementById('studentInput').value=names.map((n,i)=>`B1${String(1001+i).padStart(4,'0')} ${n}`).join('\n');
+  parseStudents();
+}
+
+function clearStudents(){
+  students=[];seatMap={};
+  document.getElementById('studentInput').value='';
+  document.getElementById('stuInfo').textContent='';
+  document.getElementById('stuTags').innerHTML='';
+  document.getElementById('capWrap').style.display='none';
+  document.getElementById('clsViews').innerHTML='<div class="no-result"><div class="icon">🏫</div>請先選擇教室並載入學生名單，<br>然後點擊「開始排座位」</div>';
+}
+
+function renderStuTags(){
+  document.getElementById('stuInfo').textContent=`共 ${students.length} 位學生`;
+  document.getElementById('stuTags').innerHTML=students.map(s=>`<span class="tag">${s.name}</span>`).join('');
+}
+
+function renderClsList(){
+  const all=allClassrooms();
+  document.getElementById('clsList').innerHTML=all.map(c=>`
+    <div class="opt-item ${selectedCls.has(c.id)?'selected':''}" onclick="toggleCls('${c.id}')">
+      <input type="checkbox" ${selectedCls.has(c.id)?'checked':''} onclick="event.stopPropagation();toggleCls('${c.id}')">
+      <span>${c.name}</span>
+      <span style="margin-left:auto;font-size:.72rem;color:#aaa">${getCapacity(c)}座</span>
+    </div>`).join('');
+  updateCapBar();
+}
+
+function toggleCls(id){
+  if(selectedCls.has(id)) selectedCls.delete(id); else selectedCls.add(id);
+  renderClsList(); updateCapBar();
+}
+
+function updateCapBar(){
+  if(!selectedCls.size||!students.length){document.getElementById('capWrap').style.display='none';return;}
+  const cap=getTotalSelectedCap();
+  const pct=Math.min(100,Math.round(students.length/cap*100));
+  const fill=document.getElementById('capFill');
+  fill.style.width=pct+'%';
+  fill.className='cap-fill '+(pct>100?'over':pct>85?'warn':'ok');
+  document.getElementById('capText').textContent=`${students.length} 人 / ${cap} 座 (${pct}%) — ${[...selectedCls].join('、')}`;
+  document.getElementById('capWrap').style.display='block';
+}
+
+function selMode(m){
+  currentMode=m;
+  ['order','random','name'].forEach(k=>{ document.getElementById('opt-'+k).classList.toggle('selected',k===m); document.getElementById('opt-'+k).querySelector('input').checked=(k===m); });
+}
+
+function onQuincunxToggle(){
+  quincunxOn=document.getElementById('quincunxToggle').checked;
+  document.getElementById('quincunxToggleRow').classList.toggle('active',quincunxOn);
+  document.getElementById('quincunxInfo').style.display=quincunxOn?'block':'none';
+}
+
+function buildSeatGrid(cls){
+  const seats=[];
+  if(cls.type==='fan'){
+    cls.layout.forEach(r=>{ let colIdx=0; r.blocks.forEach((cnt,bi)=>{ if(cnt===0){colIdx+=8;return;} for(let p=0;p<cnt;p++) seats.push({key:`${r.row}-${bi}-${p}`,gridRow:r.row,gridCol:colIdx+p}); colIdx+=cnt+2; }); });
+  } else if(cls.type==='grid'){
+    let colIdx=0;
+    cls.cols.forEach((col,ci)=>{ for(let row=col.startRow;row<=col.endRow;row++){ if(col.type==='single'){ seats.push({key:`${row}-${ci}-0`,gridRow:row,gridCol:colIdx}); } else { seats.push({key:`${row}-${ci}-0`,gridRow:row,gridCol:colIdx}); seats.push({key:`${row}-${ci}-1`,gridRow:row,gridCol:colIdx+1}); } } colIdx+=col.type==='single'?2:3; });
+  } else if(cls.type==='el308'){
+    cls.cols.forEach((col,ci)=>{ for(let r=0;r<col.rows;r++) seats.push({key:`${ci}-${r}`,gridRow:r+1,gridCol:ci}); });
+  } else if(cls.type==='el310'){
+    let colIdx=0;
+    cls.segments.forEach((seg,si)=>{
+      if(seg.type==='aisle'){colIdx+=2;return;}
+      if(seg.type==='teacher'){colIdx+=2;return;}
+      const start=seg.startSlot||1;
+      for(let r=0;r<seg.rows;r++) seats.push({key:`${si}-${r}`,gridRow:start+r,gridCol:colIdx});
+      colIdx+=2;
+    });
+  }
+  return seats;
+}
+
+function applyQuincunx(seats){
+  const occupied=new Set(); const result=[];
+  for(const s of seats){
+    const neighbors=[`${s.gridRow-1},${s.gridCol}`,`${s.gridRow+1},${s.gridCol}`,`${s.gridRow},${s.gridCol-1}`,`${s.gridRow},${s.gridCol+1}`];
+    if(!neighbors.some(n=>occupied.has(n))){ result.push(s); occupied.add(`${s.gridRow},${s.gridCol}`); }
+  }
+  return result;
+}
+
+function assignSeats(){
+  if(!students.length){showAlert('請先載入學生名單','warning');return;}
+  if(!selectedCls.size){showAlert('請先選擇教室','warning');return;}
+  let sorted=[...students];
+  if(currentMode==='random') sorted=shuffle(sorted);
+  else if(currentMode==='name') sorted.sort((a,b)=>a.name.localeCompare(b.name,'zh-TW'));
+  else sorted.sort((a,b)=>a.id.localeCompare(b.id));
+  seatMap={}; let stuIdx=0;
+  for(const clsId of selectedCls){
+    const cls=allClassrooms().find(c=>c.id===clsId); if(!cls)continue;
+    const grid=buildSeatGrid(cls);
+    const avail=quincunxOn?applyQuincunx(grid):grid;
+    seatMap[clsId]={};
+    for(const s of avail){ if(stuIdx>=sorted.length) break; seatMap[clsId][s.key]=sorted[stuIdx++].id; }
+  }
+  if(stuIdx<sorted.length) showAlert(`⚠️ 座位不足，${sorted.length-stuIdx} 位學生未分配`,'warning');
+  else showAlert(`✅ 排列完成！${stuIdx} 人分配至 ${selectedCls.size} 間教室${quincunxOn?' (梅花座)':''}`,'success');
+  renderAllClassrooms(); renderList();
+}
+
+function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function renderAllClassrooms(){
+  if(!selectedCls.size)return;
+  let html='';
+  for(const clsId of selectedCls){
+    const cls=allClassrooms().find(c=>c.id===clsId); if(!cls)continue;
+    const map=seatMap[clsId]||{};
+    const count=Object.keys(map).length;
+    html+=`<div class="cls-view">`;
+    html+=`<div class="cls-title"><span class="cls-badge">${cls.name}</span><span class="cls-stat">👥 ${count} 人 / ${getCapacity(cls)} 座</span></div>`;
+    html+=`<div class="stage">▼ 白板 / 講台 ▼</div>`;
+    html+=`<div class="cls-center">`;
+    if(cls.type==='fan')        html+=renderFan(cls,clsId);
+    else if(cls.type==='grid')  html+=renderGrid(cls,clsId);
+    else if(cls.type==='el308') html+=renderEL308(cls,clsId);
+    else if(cls.type==='el310') html+=renderEL310(cls,clsId);
+    html+=`</div></div>`;
+  }
+  document.getElementById('clsViews').innerHTML=html||'<div class="no-result"><div class="icon">🏫</div>尚未排列</div>';
+}
+
+// ── EL310 ──
+function renderEL310(cls, clsId){
+  const map=seatMap[clsId]||{};
+  const hasAssigned=Object.keys(map).length>0;
+  const eSegIdx=cls.segments.findIndex(s=>s.label==='E排');
+  const eSeg=eSegIdx>=0?cls.segments[eSegIdx]:null;
+
+  let hdr=`<div class="el310-headers">`;
+  cls.segments.forEach((seg)=>{
+    if(seg.type==='aisle'){ hdr+=`<div style="width:24px;min-width:24px"></div>`; return; }
+    if(seg.label==='E排') return;
+    if(seg.type==='teacher') hdr+=`<div class="el310-col-lbl" style="color:#374151;font-size:.65rem">教師機<br>/E排</div>`;
+    else hdr+=`<div class="el310-col-lbl">${seg.label}</div>`;
+  });
+  hdr+=`</div>`;
+
+  let body=`<div class="el310-body">`;
+  cls.segments.forEach((seg,si)=>{
+    if(seg.type==='aisle'){
+      const totalH=cls.maxRows*SLOT_H-SEAT_GAP;
+      body+=`<div style="width:24px;min-width:24px;height:${totalH}px;background:repeating-linear-gradient(180deg,#cbd5e0 0px,#cbd5e0 3px,transparent 3px,transparent 10px);border-radius:4px;opacity:.5"></div>`;
+      return;
+    }
+    if(seg.label==='E排') return;
+    body+=`<div class="el310-col">`;
+    if(seg.type==='teacher'){
+      body+=`<div class="teacher-pc">💻<br>教師機</div>`;
+      if(eSeg){
+        for(let r=0;r<eSeg.rows;r++) body+=renderSeatHtml(`${eSegIdx}-${r}`,r+1,0,clsId,hasAssigned);
+        const used=1+eSeg.rows;
+        if(used<cls.maxRows) body+=`<div style="height:${(cls.maxRows-used)*SLOT_H-SEAT_GAP}px"></div>`;
+      }
+    } else {
+      const start=seg.startSlot||1;
+      if(start>1) body+=`<div style="height:${(start-1)*SLOT_H}px"></div>`;
+      for(let r=0;r<seg.rows;r++) body+=renderSeatHtml(`${si}-${r}`,r+1,0,clsId,hasAssigned);
+      const used=(start-1)+seg.rows;
+      if(used<cls.maxRows) body+=`<div style="height:${(cls.maxRows-used)*SLOT_H-SEAT_GAP}px"></div>`;
+    }
+    body+=`</div>`;
+  });
+  body+=`</div>`;
+  return `<div class="el310-outer">${hdr}${body}</div>`;
+}
+
+// ── EL308 ──
+function renderEL308(cls, clsId){
+  const map=seatMap[clsId]||{};
+  const hasAssigned=Object.keys(map).length>0;
+  let html=`<div style="display:inline-flex;flex-direction:column;align-items:stretch">`;
+  html+=`<div style="display:flex;justify-content:flex-end;margin-bottom:5px"><div style="background:#374151;color:#fff;border-radius:6px;padding:3px 12px;font-size:.72rem;font-weight:700">🚪 門</div></div>`;
+  html+=`<div style="display:flex;gap:${SEAT_GAP}px;margin-bottom:5px;justify-content:center">`;
+  cls.cols.forEach(col=>{ html+=`<div style="width:${SEAT_W}px;min-width:${SEAT_W}px;text-align:center;font-size:.7rem;font-weight:700;color:#555">${col.label}</div>`; });
+  html+=`</div>`;
+  html+=`<div style="display:flex;gap:${SEAT_GAP}px;align-items:flex-start;justify-content:center">`;
+  cls.cols.forEach((col,ci)=>{
+    html+=`<div style="display:flex;flex-direction:column;gap:${SEAT_GAP}px;align-items:center">`;
+    for(let r=0;r<cls.maxRows;r++){
+      if(r<col.rows) html+=renderSeatHtml(`${ci}-${r}`,r+1,0,clsId,hasAssigned);
+      else html+=`<div style="width:${SEAT_W}px;height:${SEAT_H}px"></div>`;
+    }
+    html+=`</div>`;
+  });
+  html+=`</div></div>`;
+  return html;
+}
+
+// ── EB106 ──
+function renderFan(cls,clsId){
+  const hasAssigned=Object.keys(seatMap[clsId]||{}).length>0;
+  let html=`<div class="eb106">`;
+  cls.layout.forEach(r=>{ html+=`<div class="eb106-row">`; r.blocks.forEach((cnt,bi)=>{ if(cnt===0){html+=`<div style="min-width:20px"></div>`;return;} html+=`<div class="eb106-block">`; for(let p=0;p<cnt;p++) html+=renderSeatHtml(`${r.row}-${bi}-${p}`,r.row,p,clsId,hasAssigned); html+='</div>'; }); html+='</div>'; });
+  html+='</div>'; return html;
+}
+
+// ── EL104 ──
+function renderGrid(cls,clsId){
+  const hasAssigned=Object.keys(seatMap[clsId]||{}).length>0;
+  let html=`<div class="el104">`;
+  cls.cols.forEach((col,ci)=>{
+    html+=`<div class="el104-col"><div class="el104-col-lbl">${col.label}</div>`;
+    for(let row=1;row<=cls.rows;row++){
+      if(row<col.startRow||row>col.endRow){ html+=`<div style="height:${SEAT_H}px"></div>`; continue; }
+      if(col.type==='single'){ html+=`<div>${renderSeatHtml(`${row}-${ci}-0`,row,0,clsId,hasAssigned)}</div>`; }
+      else { html+=`<div class="desk">${renderSeatHtml(`${row}-${ci}-0`,row,0,clsId,hasAssigned)}${renderSeatHtml(`${row}-${ci}-1`,row,1,clsId,hasAssigned)}</div>`; }
+    }
+    html+='</div>';
+  });
+  html+='</div>'; return html;
+}
+
+// ── 單一座位 ──
+function renderSeatHtml(key,seatNum,pos,clsId,hasAssigned){
+  const map=seatMap[clsId]||{};
+  const sid=map[key];
+  const stu=sid?students.find(s=>s.id===sid):null;
+  const isQ=quincunxOn&&!stu&&hasAssigned;
+  let c='seat';
+  if(stu) c+=' occupied'; else if(isQ) c+=' quincunx'; else if(hasAssigned) c+=' empty';
+  const num=`<div class="seat-num">${seatNum}</div>`;
+  const content=stu
+    ?`<div class="seat-name">${stu.name}</div><div class="seat-id">${stu.id}</div>`
+    :(isQ?`<div style="font-size:.8rem;color:#d69e2e">✿</div>`:`<div class="seat-id" style="color:#ccc">空</div>`);
+  return `<div class="${c}" onclick="openSeatEdit('${key}','${clsId}')" draggable="true" ondragstart="dragStart('${key}','${clsId}')" ondragover="dragOver(event)" ondrop="drop(event,'${key}','${clsId}')">${num}${content}</div>`;
+}
+
+function renderList(){
+  let rows=[];
+  for(const clsId of selectedCls){ const map=seatMap[clsId]||{}; Object.entries(map).forEach(([k,sid])=>{ const stu=students.find(s=>s.id===sid); rows.push(`<tr><td>${clsId}</td><td>${k}</td><td>${stu?stu.id:''}</td><td>${stu?stu.name:''}</td></tr>`); }); }
+  document.getElementById('listContent').innerHTML=rows.length?`<table class="exp-table"><thead><tr><th>教室</th><th>座位</th><th>學號</th><th>姓名</th></tr></thead><tbody>${rows.join('')}</tbody></table>`:'<div class="no-result"><div class="icon">📋</div>尚未排列座位</div>';
+}
+
+let dragKey=null,dragClsId=null;
+function dragStart(key,clsId){dragKey=key;dragClsId=clsId;}
+function dragOver(e){e.preventDefault();}
+function drop(e,key,clsId){
+  e.preventDefault(); if(!dragKey||dragClsId!==clsId||dragKey===key)return;
+  const map=seatMap[clsId]||{}; const tmp=map[dragKey];
+  if(map[key]) map[dragKey]=map[key]; else delete map[dragKey];
+  if(tmp) map[key]=tmp; else delete map[key];
+  renderAllClassrooms();renderList();
+}
+
+function openSeatEdit(key,clsId){
+  editSeatKey=key;editSeatCls=clsId;
+  const map=seatMap[clsId]||{}; const sid=map[key]; const stu=sid?students.find(s=>s.id===sid):null;
+  document.getElementById('seatModalInfo').textContent=`教室：${clsId}　座位：${key}　目前：${stu?stu.name+' ('+stu.id+')':'空座位'}`;
+  const sel=document.getElementById('seatSelect');
+  const occupied=new Set(); for(const m of Object.values(seatMap)) Object.values(m).forEach(v=>occupied.add(v));
+  sel.innerHTML='<option value="">-- 空座位 --</option>'+students.map(s=>`<option value="${s.id}" ${s.id===sid?'selected':''}>${s.name} (${s.id})${occupied.has(s.id)&&s.id!==sid?' ✓':''}</option>`).join('');
+  openModal('seatModal');
+}
+function clearSeat(){ if(!seatMap[editSeatCls])return; delete seatMap[editSeatCls][editSeatKey]; closeModal('seatModal');renderAllClassrooms();renderList(); }
+function saveSeat(){
+  const v=document.getElementById('seatSelect').value;
+  if(!seatMap[editSeatCls]) seatMap[editSeatCls]={};
+  if(v){ for(const [cid,map] of Object.entries(seatMap)){ const oldKey=Object.keys(map).find(k=>map[k]===v); if(oldKey){ if(cid===editSeatCls&&oldKey!==editSeatKey){ if(seatMap[editSeatCls][editSeatKey]) map[oldKey]=seatMap[editSeatCls][editSeatKey]; else delete map[oldKey]; } else if(cid!==editSeatCls) delete map[oldKey]; break; } } seatMap[editSeatCls][editSeatKey]=v; } else { delete seatMap[editSeatCls][editSeatKey]; }
+  closeModal('seatModal');renderAllClassrooms();renderList();
+}
+
+function openAddCls(){openModal('addClsModal');}
+function addCls(){
+  const name=document.getElementById('newClsName').value.trim(); const raw=document.getElementById('newClsLayout').value.trim();
+  if(!name||!raw){showAlert('請填寫教室名稱與配置','warning');return;}
+  const layout=raw.split('\n').map((l,i)=>({row:i+1,blocks:l.split(',').map(n=>parseInt(n)||0)}));
+  const maxSec=Math.max(...layout.map(r=>r.blocks.length));
+  const sections=Array.from({length:maxSec},(_,i)=>['左區','中左區','中右區','右區'][i]||`區${i+1}`);
+  customCls.push({id:name,name,type:'fan',sections,layout});
+  closeModal('addClsModal'); document.getElementById('newClsName').value=''; document.getElementById('newClsLayout').value='';
+  renderClsList(); showAlert(`✅ 已新增教室 ${name}`,'success');
+}
+
+function exportCSV(){
+  let hasData=false; for(const m of Object.values(seatMap)) if(Object.keys(m).length){hasData=true;break;}
+  if(!hasData){showAlert('尚未排列座位','warning');return;}
+  const rows=[['教室','座位','學號','姓名']];
+  for(const clsId of selectedCls){ const map=seatMap[clsId]||{}; Object.entries(map).forEach(([k,sid])=>{ const s=students.find(x=>x.id===sid); rows.push([clsId,k,s?s.id:'',s?s.name:'']); }); }
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='座位表.csv';a.click();
+}
+
+function exportPrint(){
+  if(!selectedCls.size){showAlert('請先選擇教室','warning');return;}
+  const w=window.open('','_blank');
+  w.document.write(`<html><head><title>座位表</title><style>body{font-family:Arial;font-size:12px}.seat{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:72px;height:62px;border:1px solid #999;padding:4px;margin:3px;text-align:center;font-size:11px;border-radius:5px}.cls-view{margin-bottom:30px;page-break-after:always}.cls-center{display:flex;flex-direction:column;align-items:center}</style></head><body>`);
+  w.document.write(document.getElementById('clsViews').innerHTML);
+  w.document.write('</body></html>'); w.document.close(); w.print();
+}
+
+function resetAll(){
+  seatMap={};students=[];selectedCls=new Set();
+  document.getElementById('studentInput').value=''; document.getElementById('stuInfo').textContent=''; document.getElementById('stuTags').innerHTML=''; document.getElementById('capWrap').style.display='none';
+  document.getElementById('quincunxToggle').checked=false; quincunxOn=false;
+  document.getElementById('quincunxToggleRow').classList.remove('active'); document.getElementById('quincunxInfo').style.display='none';
+  renderClsList();
+  document.getElementById('clsViews').innerHTML='<div class="no-result"><div class="icon">🏫</div>請先選擇教室並載入學生名單，<br>然後點擊「開始排座位」</div>';
+  document.getElementById('listContent').innerHTML='<div class="no-result"><div class="icon">📋</div>尚未排列座位</div>';
+  showAlert('已重設所有資料','info');
+}
+
+function switchTab(t){ ['seat','list'].forEach(k=>{ document.getElementById('tab-'+k).classList.toggle('active',k===t); document.getElementById('view-'+k).style.display=k===t?'block':'none'; }); }
+function openModal(id){document.getElementById(id).classList.add('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+function showAlert(msg,type='info'){ const d=document.getElementById('alertArea'); d.innerHTML=`<div class="alert alert-${type}">${msg}</div>`; setTimeout(()=>d.innerHTML='',3500); }
+
+init();
+</script>
+</body>
+</html>
