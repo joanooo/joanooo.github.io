@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Joanoo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&family=Inter:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      background: #0a0a0a;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* 背景光暈 */
+    .bg-glow {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .glow-1 {
+      width: clamp(300px, 50vw, 600px);
+      height: clamp(300px, 50vw, 600px);
+      background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+      top: -150px; left: -150px;
+      animation: drift1 12s ease-in-out infinite;
+    }
+    .glow-2 {
+      width: clamp(250px, 40vw, 500px);
+      height: clamp(250px, 40vw, 500px);
+      background: radial-gradient(circle, rgba(236,72,153,0.08) 0%, transparent 70%);
+      bottom: -100px; right: -100px;
+      animation: drift2 15s ease-in-out infinite;
+    }
+    .glow-3 {
+      width: clamp(150px, 25vw, 300px);
+      height: clamp(150px, 25vw, 300px);
+      background: radial-gradient(circle, rgba(34,211,238,0.06) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      animation: drift3 10s ease-in-out infinite;
+    }
+
+    @keyframes drift1 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(40px, 30px); }
+    }
+    @keyframes drift2 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-30px, -40px); }
+    }
+    @keyframes drift3 {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.2); }
+    }
+
+    /* 流星 canvas */
+    #meteor-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* 主體 */
+    .center {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      padding: clamp(16px, 4vw, 40px);
+      width: 100%;
+    }
+
+    /* 主標題 */
+    .main-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(64px, 18vw, 160px);
+      font-weight: 900;
+      letter-spacing: clamp(-2px, -0.5vw, -4px);
+      line-height: 1;
+      background: linear-gradient(
+        135deg,
+        #ffffff 0%,
+        #e0e7ff 30%,
+        #a5b4fc 55%,
+        #818cf8 75%,
+        #6366f1 100%
+      );
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: fadeUp 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+      position: relative;
+    }
+
+    .main-title::after {
+      content: 'Joanoo';
+      position: absolute;
+      top: 0; left: 0;
+      background: linear-gradient(
+        135deg,
+        transparent 0%,
+        rgba(255,255,255,0.05) 40%,
+        rgba(255,255,255,0.15) 50%,
+        transparent 60%
+      );
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      pointer-events: none;
+    }
+
+    .subtitle {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(12px, 2.5vw, 20px);
+      font-weight: 300;
+      font-style: italic;
+      color: rgba(148, 163, 184, 0.7);
+      letter-spacing: clamp(3px, 1.5vw, 6px);
+      margin-top: 8px;
+      animation: fadeUp 1.2s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .line {
+      width: clamp(40px, 8vw, 60px);
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #6366f1, transparent);
+      margin: clamp(16px, 4vw, 28px) auto;
+      animation: fadeUp 1.2s 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .tools {
+      display: flex;
+      gap: clamp(8px, 2vw, 16px);
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: fadeUp 1.2s 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+      max-width: 600px;
+      width: 100%;
+    }
+
+    .tool-link {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(11px, 1.8vw, 13px);
+      font-weight: 300;
+      letter-spacing: clamp(1px, 0.5vw, 2px);
+      text-transform: uppercase;
+      color: rgba(148, 163, 184, 0.6);
+      text-decoration: none;
+      padding: clamp(8px, 1.5vw, 10px) clamp(14px, 3vw, 22px);
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: 40px;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(4px);
+      background: rgba(99,102,241,0.04);
+      white-space: nowrap;
+      /* 觸控優化 */
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+
+    .tool-link:hover,
+    .tool-link:active {
+      color: #a5b4fc;
+      border-color: rgba(99,102,241,0.6);
+      background: rgba(99,102,241,0.1);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(99,102,241,0.15);
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .footer-dot {
+      position: fixed;
+      bottom: clamp(12px, 3vw, 24px);
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(9px, 1.5vw, 11px);
+      letter-spacing: 2px;
+      color: rgba(71, 85, 105, 0.5);
+      text-transform: uppercase;
+      animation: fadeUp 1.2s 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    /* 手機直式 */
+    @media (max-width: 480px) {
+      .subtitle { letter-spacing: 3px; }
+      .tools { gap: 8px; }
+    }
+
+    /* 平板 */
+    @media (min-width: 481px) and (max-width: 1024px) {
+      .main-title { font-size: clamp(80px, 15vw, 130px); }
+    }
+
+    /* 觸控裝置 hover 移除位移避免卡住 */
+    @media (hover: none) {
+      .tool-link:hover { transform: none; }
+      .tool-link:active {
+        transform: scale(0.97);
+        background: rgba(99,102,241,0.12);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-glow glow-1"></div>
+  <div class="bg-glow glow-2"></div>
+  <div class="bg-glow glow-3"></div>
+
+  <canvas id="meteor-canvas"></canvas>
+
+  <div class="center">
+    <h1 class="main-title">Joanoo</h1>
+    <p class="subtitle">tools &amp; utilities</p>
+    <div class="line"></div>
+    <div class="tools">
+      <a href="leave-cert/index.html" class="tool-link">📋 差假證明</a>
+      <a href="seat.html" class="tool-link">🪑 乖乖坐好</a>
+      <a href="#" class="tool-link" style="opacity:0.35;pointer-events:none;">即將推出</a>
+    </div>
+  </div>
+
+  <p class="footer-dot">© 2026 Joanoo</p>
+
+  <script>
+    const canvas = document.getElementById('meteor-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // 根據螢幕大小決定流星數量
+    function getMeteorCount() {
+      const w = window.innerWidth;
+      if (w < 480) return 10;       // 手機
+      if (w < 1024) return 15;      // 平板
+      return 20;                     // 電腦
+    }
+
+    const colors = [
+      { r: 147, g: 197, b: 253 },
+      { r: 196, g: 181, b: 253 },
+      { r: 186, g: 230, b: 253 },
+      { r: 221, g: 214, b: 254 },
+    ];
+
+    class Meteor {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        const side = Math.floor(Math.random() * 4);
+        const w = canvas.width;
+        const h = canvas.height;
+
+        if (side === 0) { this.x = Math.random() * w; this.y = -20; }
+        else if (side === 1) { this.x = w + 20; this.y = Math.random() * h; }
+        else if (side === 2) { this.x = Math.random() * w; this.y = h + 20; }
+        else { this.x = -20; this.y = Math.random() * h; }
+
+        const cx = w / 2 + (Math.random() - 0.5) * w * 0.8;
+        const cy = h / 2 + (Math.random() - 0.5) * h * 0.8;
+        const angle = Math.atan2(cy - this.y, cx - this.x);
+
+        // 手機速度稍慢
+        const baseSpeed = window.innerWidth < 480 ? 1.2 : 1.5;
+        const speed = baseSpeed + Math.random() * 3;
+
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+
+        // 手機尾巴短一點
+        const baseLen = window.innerWidth < 480 ? 40 : 60;
+        this.length = baseLen + Math.random() * 100;
+        this.width = 0.5 + Math.random() * 1.5;
+        this.alpha = 0.4 + Math.random() * 0.6;
+        this.life = 0;
+        this.maxLife = 80 + Math.random() * 80;
+
+        const c = colors[Math.floor(Math.random() * colors.length)];
+        this.color = c;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.life++;
+        if (this.life > this.maxLife) this.reset();
+      }
+
+      draw() {
+        const progress = this.life / this.maxLife;
+        const fade = progress < 0.2
+          ? progress / 0.2
+          : progress > 0.7
+            ? 1 - (progress - 0.7) / 0.3
+            : 1;
+
+        const alpha = this.alpha * fade;
+        const { r, g, b } = this.color;
+
+        const len = Math.hypot(this.vx, this.vy);
+        const tailX = this.x - this.vx / len * this.length;
+        const tailY = this.y - this.vy / len * this.length;
+
+        const grad = ctx.createLinearGradient(tailX, tailY, this.x, this.y);
+        grad.addColorStop(0, `rgba(${r},${g},${b},0)`);
+        grad.addColorStop(0.6, `rgba(${r},${g},${b},${alpha * 0.4})`);
+        grad.addColorStop(1, `rgba(${r},${g},${b},${alpha})`);
+
+        ctx.beginPath();
+        ctx.moveTo(tailX, tailY);
+        ctx.lineTo(this.x, this.y);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = this.width;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        const glow = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, 4);
+        glow.addColorStop(0, `rgba(${r},${g},${b},${alpha})`);
+        glow.addColorStop(1, `rgba(${r},${g},${b},0)`);
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = glow;
+        ctx.fill();
+      }
+    }
+
+    let meteors = [];
+
+    function initMeteors() {
+      const count = getMeteorCount();
+      meteors = Array.from({ length: count }, () => {
+        const m = new Meteor();
+        m.life = Math.floor(Math.random() * m.maxLife);
+        return m;
+      });
+    }
+
+    initMeteors();
+
+    // 視窗大小改變時重建流星
+    window.addEventListener('resize', () => {
+      resize();
+      initMeteors();
+    });
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      meteors.forEach(m => { m.update(); m.draw(); });
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+
+</body>
+</html>
