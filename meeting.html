@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>會議記錄產生器</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; background: #f1f5f9; display: flex; min-height: 100vh; }
+
+    .panel {
+      width: 400px; min-width: 340px; background: #1e293b; color: #e2e8f0;
+      padding: 24px 20px; display: flex; flex-direction: column; gap: 18px;
+      overflow-y: auto; z-index: 100;
+    }
+    .panel-title { font-size: 17px; font-weight: bold; color: #fff; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; letter-spacing: 1px; }
+    .section-title { font-size: 11px; font-weight: bold; color: #64748b; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label { font-size: 13px; color: #94a3b8; }
+    .form-group input, .form-group select, .form-group textarea {
+      padding: 9px 11px; border-radius: 7px; border: 1px solid #334155;
+      background: #0f172a; color: #e2e8f0; font-size: 14px; font-family: sans-serif;
+      width: 100%; transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #3b82f6; }
+    .form-group textarea { resize: vertical; min-height: 60px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .attendee-list { display: flex; flex-direction: column; gap: 6px; }
+    .attendee-item { display: flex; gap: 6px; align-items: center; }
+    .attendee-item input { flex: 1; }
+    .attendee-item select { width: 100px; flex-shrink: 0; }
+    .btn-icon { width: 30px; height: 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
+    .btn-del-row { background: #7f1d1d; color: white; }
+    .btn-del-row:hover { background: #991b1b; }
+
+    .agenda-list { display: flex; flex-direction: column; gap: 10px; }
+    .agenda-item { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .agenda-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .agenda-num { background: #1d4ed8; color: white; font-size: 12px; font-weight: bold; padding: 3px 9px; border-radius: 20px; flex-shrink: 0; }
+    .agenda-item input, .agenda-item textarea, .agenda-item select { padding: 8px 10px; border-radius: 6px; border: 1px solid #1e3a5f; background: #0a0f1e; color: #e2e8f0; font-size: 13px; font-family: sans-serif; width: 100%; }
+    .agenda-item textarea { resize: vertical; min-height: 55px; }
+    .agenda-item label { font-size: 12px; color: #64748b; }
+
+    .btn-add-agenda { padding: 9px; background: #0f172a; border: 1px dashed #334155; border-radius: 8px; color: #64748b; cursor: pointer; font-size: 13px; transition: all 0.15s; text-align: center; }
+    .btn-add-agenda:hover { border-color: #3b82f6; color: #93c5fd; }
+    .btn-generate { padding: 14px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: bold; letter-spacing: 1px; transition: opacity 0.2s; box-shadow: 0 4px 16px rgba(37,99,235,0.3); }
+    .btn-generate:hover { opacity: 0.88; }
+
+    .preview-area { flex: 1; background: #e2e8f0; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .preview-toolbar { display: none; gap: 12px; align-items: center; flex-wrap: wrap; width: 100%; max-width: 794px; }
+    .btn-print { padding: 9px 22px; background: #059669; color: white; border: none; border-radius: 7px; cursor: pointer; font-size: 14px; font-weight: bold; }
+    .btn-print:hover { background: #047857; }
+    .btn-copy-text { padding: 9px 22px; background: #7c3aed; color: white; border: none; border-radius: 7px; cursor: pointer; font-size: 14px; font-weight: bold; transition: background 0.15s; }
+    .btn-copy-text:hover { background: #6d28d9; }
+    .btn-copy-text.copied { background: #059669; }
+    .zoom-controls { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 10px; font-size: 13px; }
+    .zoom-btn { width: 28px; height: 28px; border: none; background: #f3f4f6; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; color: #374151; display: flex; align-items: center; justify-content: center; }
+    .zoom-btn:hover { background: #e5e7eb; }
+    .zoom-label { min-width: 44px; text-align: center; font-weight: bold; color: #1e293b; }
+
+    .a4-wrapper { width: 794px; transform-origin: top center; transition: transform 0.2s; }
+    .a4-page { width: 794px; min-height: 1123px; background: white; padding: 55px 65px; box-shadow: 0 4px 24px rgba(0,0,0,0.15); border-radius: 4px; font-family: '標楷體', 'DFKai-SB', serif; color: #111; }
+
+    .doc-header { text-align: center; margin-bottom: 28px; }
+    .doc-org { font-size: 15px; color: #1e3a5f; letter-spacing: 3px; margin-bottom: 4px; }
+    .doc-title { font-size: 26px; font-weight: bold; letter-spacing: 8px; color: #0f172a; margin-bottom: 6px; }
+    .doc-subtitle { font-size: 14px; color: #475569; letter-spacing: 2px; }
+    .doc-divider { border: none; border-top: 3px double #1e3a5f; margin: 16px 0; }
+    .doc-divider-thin { border: none; border-top: 1px solid #cbd5e1; margin: 14px 0; }
+
+    .info-table { width: 100%; border-collapse: collapse; font-size: 15px; margin-bottom: 20px; }
+    .info-table td { padding: 7px 10px; border: 1px solid #cbd5e1; vertical-align: top; line-height: 1.8; }
+    .info-table td:first-child { background: #f1f5f9; font-weight: bold; color: #1e3a5f; white-space: nowrap; width: 90px; text-align: center; }
+
+    .attendee-section { margin-bottom: 20px; }
+    .attendee-section-title { font-size: 15px; font-weight: bold; color: #1e3a5f; background: #eff6ff; padding: 6px 12px; border-left: 4px solid #2563eb; margin-bottom: 8px; }
+
+    /* 依身份分組顯示 */
+    .role-group { margin-bottom: 10px; }
+    .role-group-label { font-size: 12px; font-weight: bold; color: #2563eb; letter-spacing: 1px; margin-bottom: 4px; padding: 2px 8px; background: #eff6ff; border-radius: 4px; display: inline-block; }
+    .attendee-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px 6px; font-size: 14px; padding: 0 4px; }
+    .attendee-cell { padding: 4px 6px; border-bottom: 1px dotted #e2e8f0; text-align: center; }
+
+    .agenda-section { margin-bottom: 24px; }
+    .agenda-section-title { font-size: 16px; font-weight: bold; color: #fff; background: #1e3a5f; padding: 8px 14px; margin-bottom: 0; letter-spacing: 2px; }
+    .agenda-block { border: 1px solid #cbd5e1; border-top: none; margin-bottom: 12px; }
+    .agenda-block-header { background: #f8fafc; padding: 10px 14px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: baseline; gap: 10px; }
+    .agenda-block-num { background: #2563eb; color: white; font-size: 13px; font-weight: bold; padding: 2px 10px; border-radius: 20px; flex-shrink: 0; }
+    .agenda-block-title { font-size: 15px; font-weight: bold; color: #0f172a; flex: 1; }
+    .agenda-block-type { font-size: 12px; color: #64748b; background: #e2e8f0; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; }
+    .agenda-block-body { padding: 12px 16px; font-size: 14px; line-height: 2; }
+    .agenda-block-body .field-label { font-size: 13px; font-weight: bold; color: #1e3a5f; margin-bottom: 3px; margin-top: 8px; }
+    .agenda-block-body .field-label:first-child { margin-top: 0; }
+    .agenda-block-body .field-content { color: #1e293b; padding-left: 12px; border-left: 3px solid #e2e8f0; white-space: pre-wrap; }
+    .resolution-box { background: #fefce8; border: 1px solid #fde047; border-radius: 6px; padding: 10px 14px; margin-top: 8px; font-size: 14px; color: #713f12; line-height: 1.9; white-space: pre-wrap; }
+    .resolution-box::before { content: '📌 決議：'; font-weight: bold; display: block; margin-bottom: 2px; color: #92400e; }
+
+    .misc-section { border: 1px solid #cbd5e1; border-top: none; padding: 12px 16px; font-size: 14px; line-height: 2; color: #475569; white-space: pre-wrap; }
+
+    .sign-section { margin-top: 40px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: center; font-size: 14px; }
+    .sign-box { border-top: 1px solid #94a3b8; padding-top: 8px; color: #374151; }
+    .sign-box .sign-title { font-weight: bold; color: #1e3a5f; margin-bottom: 30px; }
+    .sign-box .sign-name { color: #64748b; font-size: 13px; }
+
+    .doc-footer { margin-top: 30px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px dashed #e2e8f0; padding-top: 12px; }
+
+    .placeholder { color: #94a3b8; text-align: center; font-size: 16px; margin-top: 80px; line-height: 2.2; font-family: sans-serif; }
+
+    /* 身份標籤顏色 */
+    .tag-研究生 { background: #dbeafe; color: #1e40af; }
+    .tag-專題生 { background: #dcfce7; color: #166534; }
+    .tag-博士生 { background: #f3e8ff; color: #6b21a8; }
+    .tag-教授   { background: #fef3c7; color: #92400e; }
+    .tag-助理教授 { background: #fef3c7; color: #92400e; }
+    .tag-助理   { background: #f1f5f9; color: #475569; }
+    .tag-訪問學者 { background: #fce7f3; color: #9d174d; }
+    .tag-其他   { background: #f1f5f9; color: #475569; }
+
+    .mobile-header { display: none; position: fixed; top: 0; left: 0; right: 0; background: #1e293b; padding: 12px 16px; z-index: 200; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    .mobile-header span { color: #fff; font-size: 15px; font-weight: bold; }
+    .hamburger { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 4px; }
+    .hamburger span { display: block; width: 24px; height: 2px; background: #fff; border-radius: 2px; }
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
+    .overlay.active { display: block; }
+
+    @media (max-width: 900px) {
+      body { flex-direction: column; }
+      .mobile-header { display: flex; }
+      .panel { position: fixed; top: 0; left: 0; height: 100vh; width: 340px; transform: translateX(-100%); padding-top: 70px; transition: transform 0.3s; }
+      .panel.open { transform: translateX(0); }
+      .preview-area { padding: 70px 12px 24px; }
+      .a4-wrapper { width: 100%; }
+    }
+    @media print {
+      body { background: white; }
+      .panel, .preview-toolbar, .mobile-header, .overlay { display: none !important; }
+      .preview-area { background: white; padding: 0; }
+      .a4-wrapper { transform: none !important; width: 100% !important; }
+      .a4-page { box-shadow: none; width: 100%; min-height: unset; padding: 15mm 20mm; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="mobile-header">
+  <span>📋 會議記錄產生器</span>
+  <button class="hamburger" onclick="togglePanel()"><span></span><span></span><span></span></button>
+</div>
+<div class="overlay" id="overlay" onclick="togglePanel()"></div>
+
+<div class="panel" id="panel">
+  <div class="panel-title">📋 會議記錄產生器</div>
+
+  <div>
+    <div class="section-title">基本資訊</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="form-group"><label>單位 / 系所名稱</label><input type="text" id="orgName" value="國立成功大學電機工程學系"></div>
+      <div class="form-group"><label>會議名稱</label><input type="text" id="meetingName" value="研究室週會"></div>
+      <div class="form-group"><label>屆次 / 期數（可留空）</label><input type="text" id="meetingSession" placeholder="例：第 3 次、114學年度第2學期第1次"></div>
+      <div class="two-col">
+        <div class="form-group"><label>會議日期</label><input type="date" id="meetingDate" value="2026-03-27"></div>
+        <div class="form-group"><label>會議時間</label><input type="time" id="meetingTime" value="14:00"></div>
+      </div>
+      <div class="form-group"><label>會議地點</label><input type="text" id="meetingPlace" value="電機系館 92315 室"></div>
+      <div class="form-group"><label>主席</label><input type="text" id="chairperson" value="陳靜茹"></div>
+      <div class="form-group"><label>記錄人</label><input type="text" id="recorder" value="石廷安"></div>
+    </div>
+  </div>
+
+  <hr style="border-color:#1e3a5f;">
+
+  <div>
+    <div class="section-title">出席人員</div>
+    <div class="attendee-list" id="attendeeList"></div>
+    <button class="btn-add-agenda" style="margin-top:8px;" onclick="addAttendee()">＋ 新增人員</button>
+  </div>
+
+  <hr style="border-color:#1e3a5f;">
+
+  <div>
+    <div class="section-title">議題列表</div>
+    <div class="agenda-list" id="agendaList"></div>
+    <button class="btn-add-agenda" onclick="addAgenda()">＋ 新增議題</button>
+  </div>
+
+  <hr style="border-color:#1e3a5f;">
+
+  <div>
+    <div class="section-title">臨時動議</div>
+    <div class="form-group"><textarea id="miscMotion" placeholder="如無臨時動議請留空…" style="min-height:70px;"></textarea></div>
+  </div>
+
+  <button class="btn-generate" onclick="generate()">📄 產生會議記錄</button>
+</div>
+
+<div class="preview-area">
+  <div class="preview-toolbar" id="toolbar">
+    <button class="btn-print" onclick="window.print()">🖨️ 列印 / 存成 PDF</button>
+    <button class="btn-copy-text" id="btnCopyText" onclick="copyText()">📋 複製純文字</button>
+    <div class="zoom-controls">
+      <button class="zoom-btn" onclick="changeZoom(-10)">−</button>
+      <span class="zoom-label" id="zoomLabel">100%</span>
+      <button class="zoom-btn" onclick="changeZoom(10)">＋</button>
+      <button class="zoom-btn" onclick="resetZoom()" style="font-size:13px;">↺</button>
+    </div>
+  </div>
+  <div class="a4-wrapper" id="a4Wrapper">
+    <div id="previewContent">
+      <div class="placeholder">⬅️ 填寫左側資訊後<br>點擊「產生會議記錄」按鈕</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let zoomLevel = 100;
+
+  // ✅ 完整成員名單（研究生 + 專題生）
+  const DEFAULT_MEMBERS = [
+    { name: '石廷安', role: '研究生' },
+    { name: '許凱睿', role: '研究生' },
+    { name: '魏笠元', role: '研究生' },
+    { name: '吳柏諺', role: '研究生' },
+    { name: '林承翰', role: '研究生' },
+    { name: '陳昭升', role: '研究生' },
+    { name: '李昱緯', role: '研究生' },
+    { name: '戴琮儒', role: '研究生' },
+    { name: '林緯哲', role: '研究生' },
+    { name: '劉顓賢', role: '研究生' },
+    { name: '翁浚哲', role: '研究生' },
+    { name: '鄭仁靖', role: '研究生' },
+    { name: '張珍珠', role: '專題生' },
+  ];
+
+  const ROLES = ['研究生','專題生','博士生','助理教授','教授','助理','訪問學者','其他'];
+  const AGENDA_TYPES = ['報告事項','討論事項','審查事項','裁示事項','提案'];
+  const WEEKDAYS = ['日','一','二','三','四','五','六'];
+
+  function init() {
+    DEFAULT_MEMBERS.forEach(a => addAttendee(a.name, a.role));
+    addAgenda('計畫進度報告', '報告事項', '各組報告本週研究進度及遭遇問題。', '請各組於下週前提交進度報告書。');
+    addAgenda('感測器安裝規劃', '討論事項', '討論嘉義現地感測器安裝時程與人員分配。', '由石廷安負責協調，預計3/30前完成安裝。');
+  }
+
+  let attendeeCount = 0;
+  function addAttendee(name = '', role = '研究生') {
+    attendeeCount++;
+    const id = 'att_' + attendeeCount;
+    const roleOptions = ROLES.map(r => `<option value="${r}" ${r===role?'selected':''}>${r}</option>`).join('');
+    const html = `
+      <div class="attendee-item" id="${id}">
+        <input type="text" value="${name}" placeholder="姓名">
+        <select>${roleOptions}</select>
+        <button class="btn-icon btn-del-row" onclick="removeRow('${id}')">✕</button>
+      </div>`;
+    document.getElementById('attendeeList').insertAdjacentHTML('beforeend', html);
+  }
+
+  let agendaCount = 0;
+  function addAgenda(title='', type='報告事項', content='', resolution='') {
+    agendaCount++;
+    const id = 'ag_' + agendaCount;
+    const num = document.querySelectorAll('.agenda-item').length + 1;
+    const typeOptions = AGENDA_TYPES.map(t => `<option value="${t}" ${t===type?'selected':''}>${t}</option>`).join('');
+    const html = `
+      <div class="agenda-item" id="${id}">
+        <div class="agenda-header">
+          <span class="agenda-num">議題 ${num}</span>
+          <button class="btn-icon btn-del-row" onclick="removeRow('${id}');reNumberAgenda()">✕</button>
+        </div>
+        <div class="form-group"><label>議題標題</label><input type="text" value="${escJs(title)}" placeholder="例：計畫進度報告"></div>
+        <div class="form-group"><label>類型</label><select>${typeOptions}</select></div>
+        <div class="form-group"><label>說明 / 內容</label><textarea placeholder="議題說明、討論內容…">${escJs(content)}</textarea></div>
+        <div class="form-group"><label>決議（可留空）</label><textarea placeholder="決議事項…">${escJs(resolution)}</textarea></div>
+      </div>`;
+    document.getElementById('agendaList').insertAdjacentHTML('beforeend', html);
+  }
+
+  function removeRow(id) { const el = document.getElementById(id); if (el) el.remove(); }
+  function reNumberAgenda() {
+    document.querySelectorAll('.agenda-item .agenda-num').forEach((el, i) => { el.textContent = `議題 ${i+1}`; });
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return '（未填）';
+    const d = new Date(dateStr + 'T00:00:00');
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y} 年 ${m} 月 ${day} 日（${WEEKDAYS[d.getDay()]}）`;
+  }
+
+  function generate() {
+    const org      = v('orgName')      || '（未填）';
+    const name     = v('meetingName')  || '會議';
+    const session  = v('meetingSession');
+    const date     = formatDate(document.getElementById('meetingDate').value);
+    const time     = v('meetingTime')  || '（未填）';
+    const place    = v('meetingPlace') || '（未填）';
+    const chair    = v('chairperson')  || '（未填）';
+    const recorder = v('recorder')    || '（未填）';
+    const misc     = v('miscMotion');
+
+    const attendees = [...document.querySelectorAll('#attendeeList .attendee-item')].map(item => {
+      const inputs = item.querySelectorAll('input, select');
+      return { name: inputs[0].value.trim(), role: inputs[1].value };
+    }).filter(a => a.name);
+
+    const agendas = [...document.querySelectorAll('#agendaList .agenda-item')].map((item, i) => {
+      const inputs = item.querySelectorAll('input, select, textarea');
+      return { num: i+1, title: inputs[0].value.trim() || `議題 ${i+1}`, type: inputs[1].value, content: inputs[2].value.trim(), resolution: inputs[3].value.trim() };
+    });
+
+    // 依身份分組
+    const roleOrder = ['教授','助理教授','博士生','研究生','專題生','助理','訪問學者','其他'];
+    const grouped = {};
+    attendees.forEach(a => {
+      if (!grouped[a.role]) grouped[a.role] = [];
+      grouped[a.role].push(a.name);
+    });
+
+    const attendeeHTML = roleOrder
+      .filter(r => grouped[r] && grouped[r].length > 0)
+      .map(r => {
+        const cells = grouped[r].map(n => `<div class="attendee-cell">${escHtml(n)}</div>`).join('');
+        const tagClass = 'tag-' + r;
+        return `
+          <div class="role-group">
+            <span class="role-group-label ${tagClass}">${r}（${grouped[r].length} 人）</span>
+            <div class="attendee-grid">${cells}</div>
+          </div>`;
+      }).join('');
+
+    const agendaBlocks = agendas.map(ag => `
+      <div class="agenda-block">
+        <div class="agenda-block-header">
+          <span class="agenda-block-num">第 ${ag.num} 案</span>
+          <span class="agenda-block-title">${escHtml(ag.title)}</span>
+          <span class="agenda-block-type">${ag.type}</span>
+        </div>
+        <div class="agenda-block-body">
+          ${ag.content ? `<div class="field-label">說明：</div><div class="field-content">${escHtml(ag.content)}</div>` : ''}
+          ${ag.resolution
+            ? `<div class="resolution-box">${escHtml(ag.resolution)}</div>`
+            : '<div style="font-size:13px;color:#94a3b8;margin-top:6px;">（本案無決議）</div>'}
+        </div>
+      </div>`).join('');
+
+    const sessionStr = session ? `　${session}` : '';
+    const titleFull = `${name}${sessionStr}　會議記錄`;
+
+    document.getElementById('previewContent').innerHTML = `
+      <div class="a4-page">
+        <div class="doc-header">
+          <div class="doc-org">${escHtml(org)}</div>
+          <div class="doc-title">${escHtml(name)}</div>
+          ${session ? `<div class="doc-subtitle">${escHtml(session)}</div>` : ''}
+        </div>
+        <hr class="doc-divider">
+        <table class="info-table">
+          <tr><td>會議名稱</td><td>${escHtml(titleFull)}</td></tr>
+          <tr><td>日　　期</td><td>${date}</td></tr>
+          <tr><td>時　　間</td><td>${escHtml(time)}</td></tr>
+          <tr><td>地　　點</td><td>${escHtml(place)}</td></tr>
+          <tr><td>主　　席</td><td>${escHtml(chair)}</td></tr>
+          <tr><td>記　　錄</td><td>${escHtml(recorder)}</td></tr>
+          <tr><td>出席人數</td><td>${attendees.length} 人</td></tr>
+        </table>
+        ${attendees.length > 0 ? `
+        <div class="attendee-section">
+          <div class="attendee-section-title">出席人員名單</div>
+          ${attendeeHTML}
+        </div>` : ''}
+        <hr class="doc-divider-thin">
+        ${agendas.length > 0 ? `
+        <div class="agenda-section">
+          <div class="agenda-section-title">議　　程</div>
+          ${agendaBlocks}
+        </div>` : ''}
+        <div class="agenda-section">
+          <div class="agenda-section-title">臨時動議</div>
+          <div class="misc-section">${misc ? escHtml(misc) : '無'}</div>
+        </div>
+        <div class="sign-section">
+          <div class="sign-box"><div class="sign-title">主　席</div><div class="sign-name">${escHtml(chair)}</div></div>
+          <div class="sign-box"><div class="sign-title">記　錄</div><div class="sign-name">${escHtml(recorder)}</div></div>
+          <div class="sign-box"><div class="sign-title">單位主管</div><div class="sign-name"></div></div>
+        </div>
+        <div class="doc-footer">${escHtml(org)}　${escHtml(titleFull)}　${date}</div>
+      </div>`;
+
+    document.getElementById('toolbar').style.display = 'flex';
+    if (window.innerWidth <= 900) togglePanel();
+    setTimeout(() => { autoZoom(); applyZoom(); }, 50);
+  }
+
+  function copyText() {
+    const org      = v('orgName') || '';
+    const name     = v('meetingName') || '會議';
+    const session  = v('meetingSession');
+    const date     = formatDate(document.getElementById('meetingDate').value);
+    const time     = v('meetingTime') || '';
+    const place    = v('meetingPlace') || '';
+    const chair    = v('chairperson') || '';
+    const recorder = v('recorder') || '';
+    const misc     = v('miscMotion');
+
+    const attendees = [...document.querySelectorAll('#attendeeList .attendee-item')].map(item => {
+      const inputs = item.querySelectorAll('input, select');
+      return `${inputs[0].value.trim()}（${inputs[1].value}）`;
+    }).filter(Boolean);
+
+    const agendas = [...document.querySelectorAll('#agendaList .agenda-item')].map((item, i) => {
+      const inputs = item.querySelectorAll('input, select, textarea');
+      const title = inputs[0].value.trim() || `議題 ${i+1}`;
+      const type = inputs[1].value;
+      const content = inputs[2].value.trim();
+      const resolution = inputs[3].value.trim();
+      let block = `【第 ${i+1} 案】${title}（${type}）\n`;
+      if (content) block += `說明：${content}\n`;
+      block += resolution ? `決議：${resolution}` : '決議：（無）';
+      return block;
+    });
+
+    const sessionStr = session ? `　${session}` : '';
+    let text = `${org}\n${name}${sessionStr}　會議記錄\n`;
+    text += '═'.repeat(40) + '\n';
+    text += `日期：${date}\n時間：${time}\n地點：${place}\n主席：${chair}\n記錄：${recorder}\n`;
+    text += `出席（${attendees.length}人）：${attendees.join('、')}\n`;
+    text += '─'.repeat(40) + '\n';
+    text += '【議程】\n' + agendas.join('\n\n') + '\n';
+    text += '─'.repeat(40) + '\n';
+    text += `【臨時動議】\n${misc || '無'}\n`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('btnCopyText');
+      btn.textContent = '✅ 已複製';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '📋 複製純文字'; btn.classList.remove('copied'); }, 2000);
+    }).catch(() => alert('複製失敗，請手動複製'));
+  }
+
+  function applyZoom() {
+    const wrapper = document.getElementById('a4Wrapper');
+    const scale = zoomLevel / 100;
+    wrapper.style.transform = `scale(${scale})`;
+    const page = wrapper.querySelector('.a4-page');
+    if (page) wrapper.style.height = (page.offsetHeight * scale) + 'px';
+    document.getElementById('zoomLabel').textContent = zoomLevel + '%';
+  }
+  function changeZoom(d) { zoomLevel = Math.min(150, Math.max(40, zoomLevel + d)); applyZoom(); }
+  function resetZoom() { zoomLevel = 100; applyZoom(); }
+  function autoZoom() {
+    const pw = document.querySelector('.preview-area').offsetWidth - 60;
+    if (pw < 794) zoomLevel = Math.max(40, Math.floor((pw / 794) * 100 / 10) * 10);
+  }
+  function togglePanel() {
+    document.getElementById('panel').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('active');
+  }
+  function v(id) { return document.getElementById(id).value.trim(); }
+  function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+  function escJs(s) { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+  window.addEventListener('resize', () => {
+    if (document.querySelector('.a4-page')) { autoZoom(); applyZoom(); }
+  });
+
+  init();
+</script>
+</body>
+</html>

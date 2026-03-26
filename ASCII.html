@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASCII 藝術產生器</title>
+  <style>
+    :root {
+      --bg: #0d1117; --surface: #161b22; --surface2: #21262d;
+      --border: #30363d; --accent: #58a6ff; --accent2: #bc8cff;
+      --green: #3fb950; --red: #f85149; --yellow: #d29922;
+      --text: #e6edf3; --text2: #8b949e; --text3: #484f58;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+
+    .topbar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 14px 24px; display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-title { font-size: 18px; font-weight: bold; color: var(--text); }
+    .topbar-title span { color: var(--accent); }
+    .topbar-sub { font-size: 12px; color: var(--text2); margin-left: 4px; }
+
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    .sidebar {
+      width: 300px; min-width: 260px; background: var(--surface);
+      border-right: 1px solid var(--border); padding: 20px 16px;
+      overflow-y: auto; display: flex; flex-direction: column; gap: 18px;
+    }
+    .sec-title {
+      font-size: 11px; font-weight: bold; color: var(--text2);
+      letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .form-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+    .form-row label { font-size: 12px; color: var(--text2); display: flex; justify-content: space-between; }
+    .form-row label span { color: var(--accent); font-weight: bold; }
+    input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+    select, input[type=text] {
+      width: 100%; padding: 8px 10px; border-radius: 7px;
+      border: 1px solid var(--border); background: var(--bg);
+      color: var(--text); font-size: 13px;
+    }
+    select:focus, input:focus { outline: none; border-color: var(--accent); }
+
+    /* 上傳區 */
+    .upload-zone {
+      border: 2px dashed var(--border); border-radius: 12px;
+      padding: 28px 16px; text-align: center; cursor: pointer;
+      transition: all 0.2s; background: var(--bg);
+    }
+    .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: rgba(88,166,255,0.05); }
+    .upload-icon { font-size: 36px; margin-bottom: 10px; }
+    .upload-text { font-size: 13px; color: var(--text2); line-height: 1.7; }
+    .upload-text strong { color: var(--accent); }
+    #fileInput { display: none; }
+
+    .preview-thumb {
+      width: 100%; border-radius: 8px; border: 1px solid var(--border);
+      display: none; margin-top: 10px; max-height: 160px; object-fit: contain; background: #000;
+    }
+
+    .btn {
+      width: 100%; padding: 11px; border: none; border-radius: 9px;
+      cursor: pointer; font-size: 14px; font-weight: bold;
+      transition: all 0.15s; letter-spacing: 0.5px;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; }
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-sm {
+      padding: 6px 14px; font-size: 12px; font-weight: bold;
+      border: none; border-radius: 6px; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-copy { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-copy.copied { background: rgba(63,185,80,0.15); color: var(--green); border-color: var(--green); }
+    .btn-dl { background: rgba(63,185,80,0.1); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+    .btn-dl:hover { background: rgba(63,185,80,0.22); }
+    .btn-invert { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+    .btn-invert.on { background: rgba(188,140,255,0.15); color: var(--accent2); border-color: var(--accent2); }
+
+    /* 字元集 */
+    .charset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .charset-btn {
+      padding: 7px 6px; border-radius: 7px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text2); cursor: pointer;
+      font-size: 11px; text-align: center; transition: all 0.15s;
+    }
+    .charset-btn:hover { border-color: var(--accent); color: var(--text); }
+    .charset-btn.active { border-color: var(--accent); background: rgba(88,166,255,0.1); color: var(--accent); font-weight: bold; }
+    .charset-preview { font-family: monospace; font-size: 10px; color: var(--text3); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* 顏色模式 */
+    .color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .color-btn {
+      padding: 8px 4px; border-radius: 7px; border: 1px solid var(--border);
+      cursor: pointer; font-size: 11px; text-align: center; transition: all 0.15s; font-weight: bold;
+    }
+    .color-btn:hover { border-color: var(--accent); }
+    .color-btn.active { border-color: var(--accent); background: rgba(88,166,255,0.1); }
+
+    /* 文字轉 ASCII */
+    .text-input-wrap { display: flex; flex-direction: column; gap: 6px; }
+    .text-input-wrap textarea {
+      width: 100%; padding: 9px 11px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--bg);
+      color: var(--text); font-size: 13px; font-family: sans-serif;
+      resize: vertical; min-height: 60px;
+    }
+    .text-input-wrap textarea:focus { outline: none; border-color: var(--accent); }
+
+    /* 輸出區 */
+    .output-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+    .output-toolbar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 10px 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .output-toolbar-title { font-size: 13px; color: var(--text2); flex: 1; }
+    .output-wrap { flex: 1; overflow: auto; padding: 16px; }
+    #asciiOutput {
+      font-family: 'Courier New', 'Lucida Console', monospace;
+      white-space: pre; line-height: 1.2;
+      display: block; width: fit-content; min-width: 100%;
+    }
+    #asciiOutput.color-white { color: #e6edf3; }
+    #asciiOutput.color-green { color: #3fb950; }
+    #asciiOutput.color-amber { color: #d29922; }
+    #asciiOutput.color-cyan  { color: #39c5cf; }
+    #asciiOutput.color-pink  { color: #f778ba; }
+    #asciiOutput.color-rgb   { color: inherit; }
+
+    .placeholder-msg {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; min-height: 300px; color: var(--text3); gap: 12px;
+    }
+    .placeholder-msg .big { font-size: 56px; }
+    .placeholder-msg p { font-size: 14px; line-height: 1.8; text-align: center; }
+
+    .toast {
+      position: fixed; bottom: 20px; right: 20px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 11px 18px; font-size: 13px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      transform: translateY(60px); opacity: 0; transition: all 0.3s; z-index: 999;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    #workCanvas { display: none; }
+
+    @media (max-width: 700px) {
+      .main { flex-direction: column; }
+      .sidebar { width: 100%; min-width: unset; border-right: none; border-bottom: 1px solid var(--border); max-height: 60vh; }
+      .output-area { min-height: 40vh; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">⬛ <span>ASCII</span> 藝術產生器</div>
+  <span class="topbar-sub">圖片 → 字元畫</span>
+</div>
+
+<div class="main">
+  <!-- ── 左側控制 ── -->
+  <div class="sidebar">
+
+    <!-- 上傳圖片 -->
+    <div>
+      <div class="sec-title">📂 上傳圖片</div>
+      <div class="upload-zone" id="uploadZone"
+        onclick="document.getElementById('fileInput').click()"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="handleDrop(event)">
+        <div class="upload-icon">🖼️</div>
+        <div class="upload-text">
+          <strong>點擊上傳</strong>或拖曳圖片<br>
+          <span style="font-size:11px;">JPG、PNG、GIF、WebP、BMP</span>
+        </div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" onchange="loadImage(event)">
+      <img id="previewThumb" class="preview-thumb" alt="預覽">
+    </div>
+
+    <hr style="border-color:var(--border);">
+
+    <!-- 輸出設定 -->
+    <div>
+      <div class="sec-title">⚙️ 輸出設定</div>
+      <div class="form-row">
+        <label>字元寬度 <span id="widthVal">120</span></label>
+        <input type="range" id="widthRange" min="20" max="300" value="120"
+          oninput="document.getElementById('widthVal').textContent=this.value">
+      </div>
+      <div class="form-row">
+        <label>對比度 <span id="contrastVal">1.0</span></label>
+        <input type="range" id="contrastRange" min="0.5" max="3.0" step="0.1" value="1.0"
+          oninput="document.getElementById('contrastVal').textContent=parseFloat(this.value).toFixed(1)">
+      </div>
+      <div class="form-row">
+        <label>亮度 <span id="brightnessVal">1.0</span></label>
+        <input type="range" id="brightnessRange" min="0.3" max="2.0" step="0.1" value="1.0"
+          oninput="document.getElementById('brightnessVal').textContent=parseFloat(this.value).toFixed(1)">
+      </div>
+      <div class="form-row">
+        <label>縱橫比修正 <span id="ratioVal">0.45</span></label>
+        <input type="range" id="ratioRange" min="0.3" max="0.7" step="0.01" value="0.45"
+          oninput="document.getElementById('ratioVal').textContent=parseFloat(this.value).toFixed(2)">
+      </div>
+    </div>
+
+    <!-- 字元集 -->
+    <div>
+      <div class="sec-title">🔤 字元集</div>
+      <div class="charset-grid" id="charsetGrid"></div>
+      <div class="form-row" style="margin-top:8px;">
+        <label>自訂字元集（暗→亮）</label>
+        <input type="text" id="customCharset" placeholder="例： .:-=+*#%@" style="font-family:monospace;">
+      </div>
+    </div>
+
+    <!-- 顏色模式 -->
+    <div>
+      <div class="sec-title">🎨 顏色模式</div>
+      <div class="color-grid" id="colorGrid"></div>
+    </div>
+
+    <hr style="border-color:var(--border);">
+
+    <!-- 文字轉大字 -->
+    <div>
+      <div class="sec-title">✏️ 文字轉大字</div>
+      <div class="text-input-wrap">
+        <textarea id="textInput" placeholder="輸入文字，例：HELLO" rows="2"></textarea>
+        <div style="display:flex;gap:6px;">
+          <select id="fontStyle" style="flex:1;">
+            <option value="block">█ 方塊體</option>
+            <option value="shadow">▓ 陰影體</option>
+            <option value="outline">□ 空心體</option>
+            <option value="slim">| 細線體</option>
+          </select>
+          <button class="btn btn-secondary" style="width:auto;padding:8px 14px;font-size:13px;" onclick="renderText()">產生</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 產生按鈕 -->
+    <button class="btn btn-primary" id="generateBtn" onclick="generateASCII()" disabled>
+      ⚡ 產生 ASCII 藝術
+    </button>
+  </div>
+
+  <!-- ── 右側輸出 ── -->
+  <div class="output-area">
+    <div class="output-toolbar">
+      <span class="output-toolbar-title" id="outputInfo">尚未產生</span>
+      <button class="btn-sm btn-invert" id="invertBtn" onclick="toggleInvert()">反轉</button>
+      <button class="btn-sm btn-copy" id="copyBtn" onclick="copyASCII()">📋 複製</button>
+      <button class="btn-sm btn-dl" onclick="downloadTXT()">⬇️ 下載 .txt</button>
+      <button class="btn-sm btn-dl" style="background:rgba(88,166,255,0.1);color:var(--accent);border-color:rgba(88,166,255,0.3);" onclick="downloadPNG()">🖼️ 存成圖片</button>
+    </div>
+    <div class="output-wrap" id="outputWrap">
+      <div class="placeholder-msg" id="placeholderMsg">
+        <div class="big">⬛</div>
+        <p>上傳圖片並調整設定<br>點擊「產生 ASCII 藝術」開始轉換</p>
+      </div>
+      <pre id="asciiOutput" class="color-white" style="display:none;font-size:7px;"></pre>
+    </div>
+  </div>
+</div>
+
+<canvas id="workCanvas" style="display:none;"></canvas>
+<div class="toast" id="toast"></div>
+
+<script>
+  const CHARSETS = [
+    { id:'standard', name:'標準',   chars:' .\'`^",:;Il!i><~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$' },
+    { id:'simple',   name:'簡單',   chars:' .:-=+*#%@' },
+    { id:'blocks',   name:'方塊',   chars:' ░▒▓█' },
+    { id:'binary',   name:'二進位', chars:' 01' },
+    { id:'braille',  name:'點字',   chars:' ⠁⠃⠇⠏⠟⠿' },
+    { id:'dense',    name:'密集',   chars:' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ' },
+    { id:'minimal',  name:'極簡',   chars:' .-+#' },
+    { id:'dots',     name:'圓點',   chars:' ·∙•◦○◎●' },
+  ];
+
+  const COLOR_MODES = [
+    { id:'white', label:'白色',  style:'color:#e6edf3' },
+    { id:'green', label:'綠色',  style:'color:#3fb950' },
+    { id:'amber', label:'琥珀',  style:'color:#d29922' },
+    { id:'cyan',  label:'青色',  style:'color:#39c5cf' },
+    { id:'pink',  label:'粉色',  style:'color:#f778ba' },
+    { id:'rgb',   label:'彩色',  style:'color:inherit' },
+  ];
+
+  let currentCharset = 'standard';
+  let currentColor   = 'white';
+  let isInverted     = false;
+  let sourceImage    = null;
+  let lastASCII      = '';
+  let lastRGBData    = null;
+
+  // ── 初始化 ──
+  function init() {
+    document.getElementById('charsetGrid').innerHTML = CHARSETS.map(c => `
+      <div class="charset-btn ${c.id==='standard'?'active':''}" onclick="selectCharset('${c.id}')" id="cs-${c.id}">
+        <div>${c.name}</div>
+        <div class="charset-preview">${c.chars.slice(0,16)}</div>
+      </div>`).join('');
+
+    document.getElementById('colorGrid').innerHTML = COLOR_MODES.map(c => `
+      <div class="color-btn ${c.id==='white'?'active':''}" onclick="selectColor('${c.id}')" id="cm-${c.id}" style="${c.style};background:var(--bg);border-color:var(--border);">
+        ${c.label}
+      </div>`).join('');
+  }
+
+  function selectCharset(id) {
+    currentCharset = id;
+    document.querySelectorAll('.charset-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('cs-' + id)?.classList.add('active');
+  }
+
+  function selectColor(id) {
+    currentColor = id;
+    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('cm-' + id)?.classList.add('active');
+    if (lastASCII) applyColorMode();
+  }
+
+  function applyColorMode() {
+    const out = document.getElementById('asciiOutput');
+    out.className = 'color-' + currentColor;
+    if (currentColor === 'rgb' && lastRGBData) {
+      renderRGB(lastRGBData);
+    } else {
+      out.innerHTML = '';
+      out.textContent = lastASCII;
+    }
+  }
+
+  function toggleInvert() {
+    isInverted = !isInverted;
+    const btn = document.getElementById('invertBtn');
+    btn.classList.toggle('on', isInverted);
+    btn.textContent = isInverted ? '✅ 已反轉' : '反轉';
+    if (sourceImage) generateASCII();
+  }
+
+  // ── 圖片載入 ──
+  function loadImage(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        sourceImage = img;
+        document.getElementById('previewThumb').src = ev.target.result;
+        document.getElementById('previewThumb').style.display = 'block';
+        document.getElementById('generateBtn').disabled = false;
+        showToast('✅ 圖片已載入，點擊「產生」開始轉換');
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('uploadZone').classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      loadImage({ target: { files: [file] } });
+    }
+  }
+
+  // ── 核心：圖片 → ASCII ──
+  function generateASCII() {
+    if (!sourceImage) { showToast('⚠️ 請先上傳圖片'); return; }
+
+    const width      = parseInt(document.getElementById('widthRange').value);
+    const contrast   = parseFloat(document.getElementById('contrastRange').value);
+    const brightness = parseFloat(document.getElementById('brightnessRange').value);
+    const ratio      = parseFloat(document.getElementById('ratioRange').value);
+
+    let chars = CHARSETS.find(c => c.id === currentCharset)?.chars || CHARSETS[0].chars;
+    const custom = document.getElementById('customCharset').value;
+    if (custom.trim()) chars = custom;
+    if (isInverted) chars = chars.split('').reverse().join('');
+
+    const height = Math.round(sourceImage.height / sourceImage.width * width * ratio);
+
+    const canvas = document.getElementById('workCanvas');
+    canvas.width = width; canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.filter = `contrast(${contrast}) brightness(${brightness})`;
+    ctx.drawImage(sourceImage, 0, 0, width, height);
+
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+
+    let ascii = '';
+    const rgbRows = [];
+
+    for (let y = 0; y < height; y++) {
+      let row = '';
+      const rgbRow = [];
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+        const r = data[idx], g = data[idx+1], b = data[idx+2];
+        const lum = 0.299*r + 0.587*g + 0.114*b;
+        const charIdx = Math.floor(lum / 255 * (chars.length - 1));
+        row += chars[charIdx];
+        rgbRow.push([r, g, b]);
+      }
+      ascii += row + '\n';
+      rgbRows.push(rgbRow);
+    }
+
+    lastASCII = ascii;
+    lastRGBData = { rows: rgbRows, width, height };
+
+    const out = document.getElementById('asciiOutput');
+    const fontSize = Math.max(4, Math.min(10, Math.floor(900 / width)));
+    out.style.fontSize = fontSize + 'px';
+    out.style.display = 'block';
+    document.getElementById('placeholderMsg').style.display = 'none';
+
+    if (currentColor === 'rgb') {
+      renderRGB(lastRGBData);
+    } else {
+      out.className = 'color-' + currentColor;
+      out.innerHTML = '';
+      out.textContent = ascii;
+    }
+
+    document.getElementById('outputInfo').textContent =
+      `${width} × ${height} 字元　共 ${ascii.length.toLocaleString()} 字元`;
+    showToast('✅ ASCII 藝術產生完成！');
+  }
+
+  function renderRGB({ rows }) {
+    const out = document.getElementById('asciiOutput');
+    out.className = 'color-rgb';
+    const lines = lastASCII.split('\n');
+    let html = '';
+    rows.forEach((row, y) => {
+      const line = lines[y] || '';
+      for (let x = 0; x < row.length; x++) {
+        const [r,g,b] = row[x];
+        const ch = line[x] || ' ';
+        const safe = ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : ch === '&' ? '&amp;' : ch;
+        html += `<span style="color:rgb(${r},${g},${b})">${safe}</span>`;
+      }
+      html += '\n';
+    });
+    out.innerHTML = html;
+  }
+
+  // ── 文字轉大字 ──
+  const FONT_BLOCK = {
+    'A':['  █  ','  █  ',' █ █ ','█████','█   █'],
+    'B':['████ ','█   █','████ ','█   █','████ '],
+    'C':[' ████','█    ','█    ','█    ',' ████'],
+    'D':['████ ','█   █','█   █','█   █','████ '],
+    'E':['█████','█    ','████ ','█    ','█████'],
+    'F':['█████','█    ','████ ','█    ','█    '],
+    'G':[' ████','█    ','█  ██','█   █',' ████'],
+    'H':['█   █','█   █','█████','█   █','█   █'],
+    'I':['█████','  █  ','  █  ','  █  ','█████'],
+    'J':['█████','   █ ','   █ ','█  █ ',' ██  '],
+    'K':['█   █','█  █ ','███  ','█  █ ','█   █'],
+    'L':['█    ','█    ','█    ','█    ','█████'],
+    'M':['█   █','██ ██','█ █ █','█   █','█   █'],
+    'N':['█   █','██  █','█ █ █','█  ██','█   █'],
+    'O':[' ███ ','█   █','█   █','█   █',' ███ '],
+    'P':['████ ','█   █','████ ','█    ','█    '],
+    'Q':[' ███ ','█   █','█ █ █','█  ██',' ████'],
+    'R':['████ ','█   █','████ ','█  █ ','█   █'],
+    'S':[' ████','█    ',' ███ ','    █','████ '],
+    'T':['█████','  █  ','  █  ','  █  ','  █  '],
+    'U':['█   █','█   █','█   █','█   █',' ███ '],
+    'V':['█   █','█   █','█   █',' █ █ ','  █  '],
+    'W':['█   █','█   █','█ █ █','██ ██','█   █'],
+    'X':['█   █',' █ █ ','  █  ',' █ █ ','█   █'],
+    'Y':['█   █',' █ █ ','  █  ','  █  ','  █  '],
+    'Z':['█████','   █ ','  █  ',' █   ','█████'],
+    '0':[' ███ ','█  ██','█ █ █','██  █',' ███ '],
+    '1':['  █  ',' ██  ','  █  ','  █  ','█████'],
+    '2':[' ███ ','█   █','  ██ ',' █   ','█████'],
+    '3':['████ ','    █','  ██ ','    █','████ '],
+    '4':['█   █','█   █','█████','    █','    █'],
+    '5':['█████','█    ','████ ','    █','████ '],
+    '6':[' ███ ','█    ','████ ','█   █',' ███ '],
+    '7':['█████','    █','   █ ','  █  ','  █  '],
+    '8':[' ███ ','█   █',' ███ ','█   █',' ███ '],
+    '9':[' ███ ','█   █',' ████','    █',' ███ '],
+    '!':['  █  ','  █  ','  █  ','     ','  █  '],
+    '?':[' ███ ','█   █','  ██ ','     ','  █  '],
+    ' ':['     ','     ','     ','     ','     '],
+    '.':['     ','     ','     ','     ','  █  '],
+    ',':['     ','     ','     ','  █  ',' █   '],
+    '-':['     ','     ','█████','     ','     '],
+    '+':['     ','  █  ','█████','  █  ','     '],
+  };
+
+  function renderText() {
+    const text = (document.getElementById('textInput').value || 'HELLO').toUpperCase();
+    const style = document.getElementById('fontStyle').value;
+    const lines = ['','','','',''];
+    for (const ch of text) {
+      const glyph = FONT_BLOCK[ch] || FONT_BLOCK[' '];
+      glyph.forEach((row, i) => {
+        let r = row;
+        if (style === 'shadow')  r = r.replace(/█/g,'▓');
+        else if (style === 'outline') r = r.replace(/█/g,'□');
+        else if (style === 'slim')    r = r.replace(/█/g,'|');
+        lines[i] += r + ' ';
+      });
+    }
+    lastASCII = lines.join('\n');
+    const out = document.getElementById('asciiOutput');
+    out.style.fontSize = '14px';
+    out.style.display = 'block';
+    out.className = 'color-' + currentColor;
+    out.innerHTML = '';
+    out.textContent = lastASCII;
+    document.getElementById('placeholderMsg').style.display = 'none';
+    document.getElementById('outputInfo').textContent = `文字 ASCII 藝術：「${text}」`;
+    showToast('✅ 文字 ASCII 產生完成！');
+  }
+
+  // ── 複製 ──
+  function copyASCII() {
+    if (!lastASCII) { showToast('⚠️ 尚未產生內容'); return; }
+    navigator.clipboard.writeText(lastASCII).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = '✅ 已複製';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  // ── 下載 TXT ──
+  function downloadTXT() {
+    if (!lastASCII) { showToast('⚠️ 尚未產生內容'); return; }
+    const blob = new Blob([lastASCII], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'ascii-art.txt'; a.click();
+    showToast('⬇️ 已下載 ascii-art.txt');
+  }
+
+  // ── 下載 PNG ──
+  function downloadPNG() {
+    if (!lastASCII) { showToast('⚠️ 尚未產生內容'); return; }
+    const lines = lastASCII.split('\n').filter(l => l.length > 0);
+    const fontSize = 10;
+    const lineH = fontSize * 1.2;
+    const maxW = Math.max(...lines.map(l => l.length)) * fontSize * 0.6;
+    const canvas = document.createElement('canvas');
+    canvas.width = maxW + 20; canvas.height = lines.length * lineH + 20;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.font = `${fontSize}px "Courier New", monospace`;
+    ctx.fillStyle = currentColor === 'green' ? '#3fb950'
+                  : currentColor === 'amber' ? '#d29922'
+                  : currentColor === 'cyan'  ? '#39c5cf'
+                  : currentColor === 'pink'  ? '#f778ba'
+                  : '#e6edf3';
+    lines.forEach((line, i) => { ctx.fillText(line, 10, 10 + (i + 1) * lineH); });
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = 'ascii-art.png'; a.click();
+    showToast('🖼️ 已下載 ascii-art.png');
+  }
+
+  // ── Toast ──
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  init();
+</script>
+</body>
+</html>

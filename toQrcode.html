@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Code 產生器</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: sans-serif;
+      padding: 24px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* 標題 */
+    .header { text-align: center; }
+    .header .icon {
+      font-size: 48px;
+      display: block;
+      margin-bottom: 8px;
+      filter: drop-shadow(0 0 12px rgba(139,92,246,0.8));
+    }
+    .header h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: 2px;
+    }
+    .header p {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+
+    /* 輸入區 */
+    .input-group { display: flex; flex-direction: column; gap: 8px; }
+    .input-group label {
+      font-size: 13px;
+      font-weight: bold;
+      color: #a5b4fc;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .input-group textarea {
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(0,0,0,0.3);
+      color: #e2e8f0;
+      font-size: 15px;
+      font-family: sans-serif;
+      resize: vertical;
+      min-height: 80px;
+      transition: border-color 0.2s;
+      line-height: 1.6;
+    }
+    .input-group textarea:focus {
+      outline: none;
+      border-color: #7c3aed;
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
+    }
+    .input-group textarea::placeholder { color: #475569; }
+
+    /* 選項列 */
+    .options-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .option-group { display: flex; flex-direction: column; gap: 6px; }
+    .option-group label {
+      font-size: 12px;
+      font-weight: bold;
+      color: #94a3b8;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .option-group select,
+    .option-group input[type="color"] {
+      padding: 9px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.3);
+      color: #e2e8f0;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .option-group select:focus { outline: none; border-color: #7c3aed; }
+
+    /* 顏色選擇器 */
+    .color-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .color-picker-group { display: flex; flex-direction: column; gap: 6px; }
+    .color-picker-group label {
+      font-size: 12px;
+      font-weight: bold;
+      color: #94a3b8;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .color-picker-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      padding: 6px 12px;
+    }
+    .color-picker-wrap input[type="color"] {
+      width: 32px; height: 32px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      padding: 0;
+      background: none;
+    }
+    .color-picker-wrap span {
+      font-size: 13px;
+      color: #cbd5e1;
+      font-family: monospace;
+    }
+
+    /* 產生按鈕 */
+    .btn-generate {
+      padding: 15px;
+      background: linear-gradient(135deg, #7c3aed, #2563eb);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+    }
+    .btn-generate:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(124,58,237,0.6);
+    }
+    .btn-generate:active { transform: translateY(0); }
+
+    /* QR Code 顯示區 */
+    .qr-display {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      animation: fadeIn 0.4s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .qr-box {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 0 40px rgba(124,58,237,0.3);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #qrcode canvas, #qrcode img { display: block; }
+
+    .qr-info {
+      text-align: center;
+      font-size: 13px;
+      color: #64748b;
+      max-width: 300px;
+      word-break: break-all;
+      line-height: 1.6;
+    }
+    .qr-info strong { color: #a5b4fc; }
+
+    /* 下載按鈕群 */
+    .download-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .btn-dl {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-dl-png {
+      background: #059669;
+      color: white;
+      box-shadow: 0 3px 12px rgba(5,150,105,0.3);
+    }
+    .btn-dl-png:hover { background: #047857; transform: translateY(-1px); }
+    .btn-dl-svg {
+      background: #0891b2;
+      color: white;
+      box-shadow: 0 3px 12px rgba(8,145,178,0.3);
+    }
+    .btn-dl-svg:hover { background: #0e7490; transform: translateY(-1px); }
+    .btn-dl-copy {
+      background: #7c3aed;
+      color: white;
+      box-shadow: 0 3px 12px rgba(124,58,237,0.3);
+    }
+    .btn-dl-copy:hover { background: #6d28d9; transform: translateY(-1px); }
+    .btn-dl-copy.copied { background: #059669; }
+
+    /* 字元計數 */
+    .char-count {
+      text-align: right;
+      font-size: 12px;
+      color: #475569;
+      margin-top: -4px;
+    }
+    .char-count.warn { color: #f59e0b; }
+    .char-count.over { color: #ef4444; }
+
+    /* 分隔線 */
+    .divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    @media (max-width: 480px) {
+      .card { padding: 28px 20px; }
+      .options-row, .color-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <!-- 標題 -->
+  <div class="header">
+    <span class="icon">⬛</span>
+    <h1>QR Code 產生器</h1>
+    <p>輸入任意文字或網址，即時產生 QR Code</p>
+  </div>
+
+  <!-- 輸入 -->
+  <div class="input-group">
+    <label>輸入文字 / 網址</label>
+    <textarea id="inputText" placeholder="https://example.com&#10;或輸入任意文字..." oninput="updateCharCount()"></textarea>
+    <div class="char-count" id="charCount">0 字元</div>
+  </div>
+
+  <!-- 尺寸 & 容錯率 -->
+  <div class="options-row">
+    <div class="option-group">
+      <label>尺寸</label>
+      <select id="qrSize">
+        <option value="128">128 × 128</option>
+        <option value="200">200 × 200</option>
+        <option value="256" selected>256 × 256</option>
+        <option value="512">512 × 512</option>
+      </select>
+    </div>
+    <div class="option-group">
+      <label>容錯率</label>
+      <select id="qrCorrect">
+        <option value="L">L（低 7%）</option>
+        <option value="M" selected>M（中 15%）</option>
+        <option value="Q">Q（高 25%）</option>
+        <option value="H">H（最高 30%）</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 顏色 -->
+  <div class="color-row">
+    <div class="color-picker-group">
+      <label>QR 顏色</label>
+      <div class="color-picker-wrap">
+        <input type="color" id="colorDark" value="#000000" oninput="syncColorLabel('colorDark','labelDark')">
+        <span id="labelDark">#000000</span>
+      </div>
+    </div>
+    <div class="color-picker-group">
+      <label>背景顏色</label>
+      <div class="color-picker-wrap">
+        <input type="color" id="colorLight" value="#ffffff" oninput="syncColorLabel('colorLight','labelLight')">
+        <span id="labelLight">#ffffff</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 產生按鈕 -->
+  <button class="btn-generate" onclick="generateQR()">⚡ 產生 QR Code</button>
+
+  <!-- QR Code 顯示 -->
+  <hr class="divider" id="divider" style="display:none;">
+  <div class="qr-display" id="qrDisplay">
+    <div class="qr-box">
+      <div id="qrcode"></div>
+    </div>
+    <div class="qr-info" id="qrInfo"></div>
+    <div class="download-row">
+      <button class="btn-dl btn-dl-png" onclick="downloadPNG()">⬇️ 下載 PNG</button>
+      <button class="btn-dl btn-dl-svg" onclick="downloadSVG()">⬇️ 下載 SVG</button>
+      <button class="btn-dl btn-dl-copy" id="btnCopyImg" onclick="copyImage()">📋 複製圖片</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let lastText = '';
+  let lastSize = 256;
+
+  function updateCharCount() {
+    const len = document.getElementById('inputText').value.length;
+    const el = document.getElementById('charCount');
+    el.textContent = `${len} 字元`;
+    el.className = 'char-count' + (len > 500 ? ' over' : len > 300 ? ' warn' : '');
+  }
+
+  function syncColorLabel(inputId, labelId) {
+    document.getElementById(labelId).textContent = document.getElementById(inputId).value;
+  }
+
+  function generateQR() {
+    const text = document.getElementById('inputText').value.trim();
+    if (!text) { alert('請輸入文字或網址！'); return; }
+
+    const size     = parseInt(document.getElementById('qrSize').value);
+    const correct  = document.getElementById('qrCorrect').value;
+    const colorDark  = document.getElementById('colorDark').value;
+    const colorLight = document.getElementById('colorLight').value;
+
+    lastText = text;
+    lastSize = size;
+
+    // 清除舊的
+    const container = document.getElementById('qrcode');
+    container.innerHTML = '';
+
+    new QRCode(container, {
+      text: text,
+      width: size,
+      height: size,
+      colorDark: colorDark,
+      colorLight: colorLight,
+      correctLevel: QRCode.CorrectLevel[correct]
+    });
+
+    // 顯示資訊
+    const display = text.length > 60 ? text.substring(0, 60) + '…' : text;
+    document.getElementById('qrInfo').innerHTML =
+      `<strong>內容：</strong>${escapeHtml(display)}<br>` +
+      `<strong>尺寸：</strong>${size}×${size} px　` +
+      `<strong>容錯：</strong>${correct}`;
+
+    document.getElementById('qrDisplay').style.display = 'flex';
+    document.getElementById('divider').style.display = 'block';
+
+    // 滾動到 QR Code
+    setTimeout(() => {
+      document.getElementById('qrDisplay').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
+  }
+
+  // ===== 下載 PNG =====
+  function downloadPNG() {
+    const canvas = document.querySelector('#qrcode canvas');
+    if (!canvas) { alert('請先產生 QR Code！'); return; }
+    const link = document.createElement('a');
+    link.download = 'qrcode.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+
+  // ===== 下載 SVG =====
+  function downloadSVG() {
+    const canvas = document.querySelector('#qrcode canvas');
+    if (!canvas) { alert('請先產生 QR Code！'); return; }
+
+    const size = lastSize;
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    const cw = canvas.width;
+    const ch = canvas.height;
+    const cellW = cw / size;
+    const cellH = ch / size;
+
+    // 重新用 QRCode 產生，取得模組資料
+    // 簡單方式：直接把 canvas 轉成 SVG image
+    const dataURL = canvas.toDataURL('image/png');
+    const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <image href="${dataURL}" width="${size}" height="${size}"/>
+</svg>`;
+
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'qrcode.svg';
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ===== 複製圖片 =====
+  async function copyImage() {
+    const canvas = document.querySelector('#qrcode canvas');
+    if (!canvas) { alert('請先產生 QR Code！'); return; }
+    const btn = document.getElementById('btnCopyImg');
+    try {
+      canvas.toBlob(async (blob) => {
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+          ]);
+          btn.textContent = '✅ 已複製';
+          btn.classList.add('copied');
+          setTimeout(() => { btn.textContent = '📋 複製圖片'; btn.classList.remove('copied'); }, 2000);
+        } catch(e) {
+          alert('您的瀏覽器不支援複製圖片，請使用下載 PNG 功能');
+        }
+      });
+    } catch(e) {
+      alert('複製失敗，請使用下載 PNG 功能');
+    }
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // Enter 快速產生
+  document.getElementById('inputText').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && e.ctrlKey) generateQR();
+  });
+</script>
+</body>
+</html>

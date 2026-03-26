@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>出勤紀錄系統</title>
+  <style>
+    :root {
+      --bg: #0f172a; --surface: #1e293b; --surface2: #273549;
+      --border: #334155; --accent: #3b82f6; --accent2: #7c3aed;
+      --green: #10b981; --red: #ef4444; --yellow: #f59e0b; --gray: #64748b;
+      --text: #e2e8f0; --text2: #94a3b8; --text3: #475569;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: sans-serif; min-height: 100vh; }
+
+    /* ── 頂部導覽 ── */
+    .topbar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 0 24px; display: flex; align-items: center; gap: 0;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-brand { font-size: 16px; font-weight: bold; color: #fff; padding: 16px 0; margin-right: 24px; white-space: nowrap; }
+    .topbar-brand span { color: var(--accent); }
+    .tab-btn {
+      padding: 16px 18px; background: none; border: none; color: var(--text2);
+      cursor: pointer; font-size: 14px; border-bottom: 3px solid transparent;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: bold; }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .clock { font-size: 13px; color: var(--text2); font-family: monospace; }
+
+    /* ── 頁面 ── */
+    .page { display: none; padding: 24px; max-width: 1200px; margin: 0 auto; }
+    .page.active { display: block; }
+
+    /* ── 卡片 ── */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 20px; }
+    .card-title { font-size: 14px; font-weight: bold; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+    /* ── 統計卡 ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; text-align: center; }
+    .stat-num { font-size: 32px; font-weight: bold; margin-bottom: 4px; }
+    .stat-label { font-size: 12px; color: var(--text2); }
+    .c-blue { color: var(--accent); } .c-green { color: var(--green); }
+    .c-red { color: var(--red); } .c-yellow { color: var(--yellow); }
+
+    /* ── 簽到區 ── */
+    .checkin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+    .member-card {
+      background: var(--surface2); border: 2px solid var(--border);
+      border-radius: 12px; padding: 14px 10px; text-align: center;
+      cursor: pointer; transition: all 0.2s; user-select: none; position: relative;
+    }
+    .member-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .member-card.present { border-color: var(--green); background: rgba(16,185,129,0.08); }
+    .member-card.absent  { border-color: var(--red);   background: rgba(239,68,68,0.08); }
+    .member-card.late    { border-color: var(--yellow); background: rgba(245,158,11,0.08); }
+    .member-avatar {
+      width: 48px; height: 48px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: bold; margin: 0 auto 8px;
+      background: var(--border); color: var(--text);
+    }
+    .member-card.present .member-avatar { background: rgba(16,185,129,0.2); color: var(--green); }
+    .member-card.absent  .member-avatar { background: rgba(239,68,68,0.2);  color: var(--red); }
+    .member-card.late    .member-avatar { background: rgba(245,158,11,0.2); color: var(--yellow); }
+    .member-name { font-size: 14px; font-weight: bold; margin-bottom: 4px; }
+    .member-role { font-size: 11px; color: var(--text2); margin-bottom: 6px; }
+    .member-status { font-size: 12px; font-weight: bold; }
+    .member-time { font-size: 11px; color: var(--text2); margin-top: 2px; }
+    .status-badge {
+      position: absolute; top: 8px; right: 8px;
+      width: 10px; height: 10px; border-radius: 50%;
+    }
+    .badge-present { background: var(--green); }
+    .badge-absent  { background: var(--red); }
+    .badge-late    { background: var(--yellow); }
+    .badge-none    { background: var(--border); }
+
+    /* ── 狀態切換按鈕 ── */
+    .status-btns { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .sbtn {
+      padding: 7px 16px; border: none; border-radius: 8px;
+      cursor: pointer; font-size: 13px; font-weight: bold; transition: opacity 0.15s;
+    }
+    .sbtn:hover { opacity: 0.85; }
+    .sbtn-present { background: var(--green); color: white; }
+    .sbtn-absent  { background: var(--red);   color: white; }
+    .sbtn-late    { background: var(--yellow); color: #1a1a1a; }
+    .sbtn-reset   { background: var(--border); color: var(--text); }
+    .sbtn-all-present { background: linear-gradient(135deg,#059669,#10b981); color: white; }
+
+    /* ── 日期選擇 ── */
+    .date-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .date-row input[type=date], .date-row input[type=text], .date-row select {
+      padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text); font-size: 14px;
+    }
+    .date-row input:focus, .date-row select:focus { outline: none; border-color: var(--accent); }
+    .btn-primary {
+      padding: 8px 18px; background: var(--accent); color: white;
+      border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-danger { background: var(--red); }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-success { background: var(--green); }
+    .btn-success:hover { background: #059669; }
+
+    /* ── 出勤表格 ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: var(--surface2); color: var(--text2); padding: 10px 12px; text-align: center; border-bottom: 2px solid var(--border); white-space: nowrap; font-weight: bold; }
+    td { padding: 9px 12px; border-bottom: 1px solid var(--border); text-align: center; vertical-align: middle; }
+    tr:hover td { background: rgba(255,255,255,0.03); }
+    td.name-cell { text-align: left; font-weight: bold; }
+    td.role-cell { font-size: 12px; color: var(--text2); }
+
+    /* 出勤格 */
+    .att-cell { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
+    .att-cell:hover { transform: scale(1.15); }
+    .att-p { background: rgba(16,185,129,0.2); color: var(--green); }
+    .att-a { background: rgba(239,68,68,0.2);  color: var(--red); }
+    .att-l { background: rgba(245,158,11,0.2); color: var(--yellow); }
+    .att-n { background: var(--border); color: var(--text3); }
+
+    /* 出勤率 bar */
+    .rate-bar { display: flex; align-items: center; gap: 8px; }
+    .bar-bg { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; min-width: 60px; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+    .bar-high { background: var(--green); }
+    .bar-mid  { background: var(--yellow); }
+    .bar-low  { background: var(--red); }
+    .rate-text { font-size: 12px; font-weight: bold; min-width: 38px; text-align: right; }
+
+    /* ── 歷史紀錄 ── */
+    .history-item {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 14px; cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .history-item:hover { border-color: var(--accent); }
+    .history-date { font-size: 15px; font-weight: bold; color: var(--accent); min-width: 120px; }
+    .history-label { font-size: 13px; color: var(--text2); flex: 1; }
+    .history-badges { display: flex; gap: 6px; }
+    .hbadge { font-size: 12px; padding: 3px 9px; border-radius: 20px; font-weight: bold; }
+    .hbadge-p { background: rgba(16,185,129,0.15); color: var(--green); }
+    .hbadge-a { background: rgba(239,68,68,0.15);  color: var(--red); }
+    .hbadge-l { background: rgba(245,158,11,0.15); color: var(--yellow); }
+    .history-del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; padding: 4px; transition: color 0.15s; }
+    .history-del:hover { color: var(--red); }
+
+    /* ── 成員管理 ── */
+    .member-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .member-row:last-child { border-bottom: none; }
+    .member-row input, .member-row select { padding: 7px 10px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px; }
+    .member-row input { flex: 1; }
+    .member-row select { width: 100px; }
+
+    /* ── 空狀態 ── */
+    .empty { text-align: center; padding: 40px; color: var(--text3); font-size: 14px; }
+
+    /* ── 通知 ── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #1e293b; border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 20px;
+      font-size: 14px; color: var(--text);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      transform: translateY(80px); opacity: 0;
+      transition: all 0.3s; z-index: 999;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ── 角色標籤 ── */
+    .role-tag { display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 20px; }
+    .role-研究生 { background: #1e3a5f; color: #93c5fd; }
+    .role-專題生 { background: #14532d; color: #86efac; }
+    .role-博士生 { background: #3b0764; color: #d8b4fe; }
+    .role-教授   { background: #451a03; color: #fcd34d; }
+    .role-助理   { background: #1e293b; color: #94a3b8; }
+    .role-其他   { background: #1e293b; color: #94a3b8; }
+
+    /* ── 週統計圖 ── */
+    .week-chart { display: flex; align-items: flex-end; gap: 8px; height: 80px; padding: 0 4px; }
+    .week-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+    .week-bar { width: 100%; border-radius: 4px 4px 0 0; transition: height 0.4s; min-height: 4px; }
+    .week-bar-label { font-size: 10px; color: var(--text2); }
+    .week-bar-val { font-size: 10px; color: var(--text); font-weight: bold; }
+
+    @media (max-width: 700px) {
+      .stat-grid { grid-template-columns: repeat(2, 1fr); }
+      .checkin-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+      .topbar { overflow-x: auto; }
+      .page { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 頂部導覽 -->
+<div class="topbar">
+  <div class="topbar-brand">📋 <span>出勤</span>紀錄系統</div>
+  <button class="tab-btn active" onclick="switchTab('checkin')">✅ 簽到</button>
+  <button class="tab-btn" onclick="switchTab('stats')">📊 統計</button>
+  <button class="tab-btn" onclick="switchTab('history')">📅 歷史</button>
+  <button class="tab-btn" onclick="switchTab('members')">👥 成員</button>
+  <div class="topbar-right">
+    <span class="clock" id="clock">--:--:--</span>
+  </div>
+</div>
+
+<!-- ══ 簽到頁 ══ -->
+<div class="page active" id="page-checkin">
+  <div class="card">
+    <div class="card-title">📅 本次會議資訊</div>
+    <div class="date-row">
+      <input type="date" id="todayDate">
+      <input type="text" id="meetingLabel" placeholder="會議名稱（如：研究室週會）" style="min-width:200px;">
+      <button class="btn-primary" onclick="newSession()">🔄 新建簽到</button>
+      <button class="btn-primary btn-success" onclick="saveSession()">💾 儲存紀錄</button>
+    </div>
+  </div>
+
+  <!-- 統計卡 -->
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-num c-blue" id="s-total">0</div><div class="stat-label">總人數</div></div>
+    <div class="stat-card"><div class="stat-num c-green" id="s-present">0</div><div class="stat-label">出席</div></div>
+    <div class="stat-card"><div class="stat-num c-red" id="s-absent">0</div><div class="stat-label">缺席</div></div>
+    <div class="stat-card"><div class="stat-num c-yellow" id="s-late">0</div><div class="stat-label">遲到</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🖱️ 點擊成員卡片切換狀態</div>
+    <div class="status-btns">
+      <span style="font-size:12px;color:var(--text2);">快速操作：</span>
+      <button class="sbtn sbtn-all-present" onclick="setAll('present')">✅ 全部出席</button>
+      <button class="sbtn sbtn-reset" onclick="setAll('none')">↺ 全部重置</button>
+      <span style="font-size:12px;color:var(--text2);margin-left:8px;">點擊順序：</span>
+      <span style="font-size:12px;color:var(--green);">⬜未簽 → ✅出席 → ⏰遲到 → ❌缺席 → ⬜未簽</span>
+    </div>
+    <div class="checkin-grid" id="checkinGrid"></div>
+  </div>
+</div>
+
+<!-- ══ 統計頁 ══ -->
+<div class="page" id="page-stats">
+  <div class="stat-grid" id="statsCards">
+    <div class="stat-card"><div class="stat-num c-blue" id="st-sessions">0</div><div class="stat-label">總場次</div></div>
+    <div class="stat-card"><div class="stat-num c-green" id="st-avgRate">0%</div><div class="stat-label">平均出席率</div></div>
+    <div class="stat-card"><div class="stat-num c-yellow" id="st-members">0</div><div class="stat-label">成員人數</div></div>
+    <div class="stat-card"><div class="stat-num c-red" id="st-lowCount">0</div><div class="stat-label">出席率 &lt;70%</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 各場次出席率</div>
+    <div class="week-chart" id="sessionChart"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">👤 個人出勤統計</div>
+    <div class="table-wrap">
+      <table id="statsTable">
+        <thead>
+          <tr>
+            <th style="text-align:left;">姓名</th>
+            <th>身份</th>
+            <th>出席</th>
+            <th>遲到</th>
+            <th>缺席</th>
+            <th>未記錄</th>
+            <th>出席率</th>
+          </tr>
+        </thead>
+        <tbody id="statsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 歷史頁 ══ -->
+<div class="page" id="page-history">
+  <div class="card">
+    <div class="card-title">📅 歷史出勤紀錄</div>
+    <div id="historyList"><div class="empty">尚無歷史紀錄</div></div>
+  </div>
+  <div class="card" id="historyDetail" style="display:none;">
+    <div class="card-title" id="historyDetailTitle">詳細紀錄</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="text-align:left;">姓名</th><th>身份</th><th>狀態</th><th>時間</th></tr></thead>
+        <tbody id="historyDetailBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 成員管理頁 ══ -->
+<div class="page" id="page-members">
+  <div class="card">
+    <div class="card-title">➕ 新增成員</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <input type="text" id="newName" placeholder="姓名" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;flex:1;min-width:120px;">
+      <select id="newRole" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;">
+        <option>研究生</option><option>專題生</option><option>博士生</option>
+        <option>教授</option><option>助理</option><option>其他</option>
+      </select>
+      <button class="btn-primary" onclick="addMember()">＋ 新增</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">👥 成員列表（<span id="memberCount">0</span> 人）</div>
+    <div id="memberList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ══ 資料 ══
+  const ROLE_ORDER = ['教授','博士生','研究生','專題生','助理','其他'];
+
+  let members = [
+    { id:1,  name:'石廷安', role:'研究生' },
+    { id:2,  name:'許凱睿', role:'研究生' },
+    { id:3,  name:'魏笠元', role:'研究生' },
+    { id:4,  name:'吳柏諺', role:'研究生' },
+    { id:5,  name:'林承翰', role:'研究生' },
+    { id:6,  name:'陳昭升', role:'研究生' },
+    { id:7,  name:'李昱緯', role:'研究生' },
+    { id:8,  name:'戴琮儒', role:'研究生' },
+    { id:9,  name:'林緯哲', role:'研究生' },
+    { id:10, name:'劉顓賢', role:'研究生' },
+    { id:11, name:'翁浚哲', role:'研究生' },
+    { id:12, name:'鄭仁靖', role:'專題生' },
+    { id:13, name:'張珍珠', role:'專題生' },
+  ];
+
+  // status: 'none' | 'present' | 'late' | 'absent'
+  let currentSession = {};   // { memberId: { status, time } }
+  let sessions = [];         // 歷史紀錄
+  let nextId = 14;
+
+  const STATUS_CYCLE = ['none','present','late','absent'];
+  const STATUS_LABEL = { none:'未簽到', present:'出席', late:'遲到', absent:'缺席' };
+  const STATUS_ICON  = { none:'—', present:'✅', late:'⏰', absent:'❌' };
+
+  // ══ 初始化 ══
+  function init() {
+    const today = new Date();
+    document.getElementById('todayDate').value = today.toISOString().slice(0,10);
+    document.getElementById('meetingLabel').value = '研究室週會';
+    newSession();
+    renderMemberList();
+    updateClock();
+    setInterval(updateClock, 1000);
+    // 載入範例歷史
+    loadSampleHistory();
+    renderHistory();
+    renderStats();
+  }
+
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent =
+      now.toLocaleTimeString('zh-TW', { hour12: false });
+  }
+
+  // ══ 簽到 ══
+  function newSession() {
+    currentSession = {};
+    members.forEach(m => { currentSession[m.id] = { status: 'none', time: '' }; });
+    renderCheckin();
+    updateCheckinStats();
+  }
+
+  function renderCheckin() {
+    const grid = document.getElementById('checkinGrid');
+    const sorted = [...members].sort((a,b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role));
+    grid.innerHTML = sorted.map(m => {
+      const s = currentSession[m.id] || { status:'none', time:'' };
+      const initial = m.name.charAt(0);
+      return `
+        <div class="member-card ${s.status !== 'none' ? s.status : ''}" id="mc-${m.id}" onclick="toggleStatus(${m.id})">
+          <div class="status-badge badge-${s.status === 'none' ? 'none' : s.status}"></div>
+          <div class="member-avatar">${initial}</div>
+          <div class="member-name">${m.name}</div>
+          <div class="member-role"><span class="role-tag role-${m.role}">${m.role}</span></div>
+          <div class="member-status c-${s.status === 'present' ? 'green' : s.status === 'late' ? 'yellow' : s.status === 'absent' ? 'red' : 'gray'}">
+            ${STATUS_ICON[s.status]} ${STATUS_LABEL[s.status]}
+          </div>
+          ${s.time ? `<div class="member-time">${s.time}</div>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  function toggleStatus(id) {
+    const cur = currentSession[id].status;
+    const idx = STATUS_CYCLE.indexOf(cur);
+    const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+    const time = next === 'none' ? '' : new Date().toLocaleTimeString('zh-TW', { hour12: false });
+    currentSession[id] = { status: next, time };
+    renderCheckin();
+    updateCheckinStats();
+  }
+
+  function setAll(status) {
+    members.forEach(m => {
+      const time = status === 'none' ? '' : new Date().toLocaleTimeString('zh-TW', { hour12: false });
+      currentSession[m.id] = { status, time };
+    });
+    renderCheckin();
+    updateCheckinStats();
+  }
+
+  function updateCheckinStats() {
+    const vals = Object.values(currentSession);
+    document.getElementById('s-total').textContent   = members.length;
+    document.getElementById('s-present').textContent = vals.filter(v => v.status === 'present').length;
+    document.getElementById('s-absent').textContent  = vals.filter(v => v.status === 'absent').length;
+    document.getElementById('s-late').textContent    = vals.filter(v => v.status === 'late').length;
+  }
+
+  function saveSession() {
+    const date  = document.getElementById('todayDate').value || new Date().toISOString().slice(0,10);
+    const label = document.getElementById('meetingLabel').value || '會議';
+    const snap  = {};
+    Object.keys(currentSession).forEach(k => { snap[k] = { ...currentSession[k] }; });
+    sessions.unshift({ id: Date.now(), date, label, data: snap });
+    renderHistory();
+    renderStats();
+    showToast('✅ 出勤紀錄已儲存！');
+  }
+
+  // ══ 歷史 ══
+  function loadSampleHistory() {
+    const dates = ['2026-03-20','2026-03-13','2026-03-06'];
+    const labels = ['研究室週會','研究室週會','研究室週會'];
+    dates.forEach((d, di) => {
+      const snap = {};
+      members.forEach(m => {
+        const r = Math.random();
+        const status = r < 0.75 ? 'present' : r < 0.88 ? 'late' : 'absent';
+        snap[m.id] = { status, time: status !== 'absent' ? '14:0' + (di*2+Math.floor(Math.random()*5)) : '' };
+      });
+      sessions.push({ id: Date.now() - di * 86400000, date: d, label: labels[di], data: snap });
+    });
+  }
+
+  function renderHistory() {
+    const el = document.getElementById('historyList');
+    if (!sessions.length) { el.innerHTML = '<div class="empty">尚無歷史紀錄</div>'; return; }
+    el.innerHTML = sessions.map(s => {
+      const vals = Object.values(s.data);
+      const p = vals.filter(v => v.status === 'present').length;
+      const a = vals.filter(v => v.status === 'absent').length;
+      const l = vals.filter(v => v.status === 'late').length;
+      return `
+        <div class="history-item" onclick="showHistoryDetail(${s.id})">
+          <div class="history-date">${s.date}</div>
+          <div class="history-label">${s.label}</div>
+          <div class="history-badges">
+            <span class="hbadge hbadge-p">出席 ${p}</span>
+            <span class="hbadge hbadge-l">遲到 ${l}</span>
+            <span class="hbadge hbadge-a">缺席 ${a}</span>
+          </div>
+          <button class="history-del" onclick="event.stopPropagation();deleteSession(${s.id})">🗑</button>
+        </div>`;
+    }).join('');
+  }
+
+  function showHistoryDetail(sid) {
+    const s = sessions.find(x => x.id === sid);
+    if (!s) return;
+    document.getElementById('historyDetail').style.display = 'block';
+    document.getElementById('historyDetailTitle').textContent = `📋 ${s.date} ${s.label} 詳細紀錄`;
+    const tbody = document.getElementById('historyDetailBody');
+    tbody.innerHTML = members.map(m => {
+      const d = s.data[m.id] || { status:'none', time:'' };
+      const colorClass = d.status === 'present' ? 'c-green' : d.status === 'late' ? 'c-yellow' : d.status === 'absent' ? 'c-red' : '';
+      return `<tr>
+        <td class="name-cell">${m.name}</td>
+        <td><span class="role-tag role-${m.role}">${m.role}</span></td>
+        <td class="${colorClass}" style="font-weight:bold;">${STATUS_ICON[d.status]} ${STATUS_LABEL[d.status]}</td>
+        <td style="color:var(--text2);">${d.time || '—'}</td>
+      </tr>`;
+    }).join('');
+    document.getElementById('historyDetail').scrollIntoView({ behavior:'smooth' });
+  }
+
+  function deleteSession(sid) {
+    if (!confirm('確定刪除此筆紀錄？')) return;
+    sessions = sessions.filter(s => s.id !== sid);
+    renderHistory();
+    renderStats();
+    document.getElementById('historyDetail').style.display = 'none';
+    showToast('🗑 已刪除紀錄');
+  }
+
+  // ══ 統計 ══
+  function renderStats() {
+    document.getElementById('st-sessions').textContent = sessions.length;
+    document.getElementById('st-members').textContent  = members.length;
+
+    if (!sessions.length) {
+      document.getElementById('statsBody').innerHTML = '<tr><td colspan="7" class="empty">尚無紀錄</td></tr>';
+      document.getElementById('st-avgRate').textContent = '0%';
+      document.getElementById('st-lowCount').textContent = '0';
+      document.getElementById('sessionChart').innerHTML = '<div class="empty" style="width:100%;">尚無場次資料</div>';
+      return;
+    }
+
+    // 個人統計
+    let totalRate = 0, lowCount = 0;
+    const tbody = document.getElementById('statsBody');
+    tbody.innerHTML = members.map(m => {
+      let p=0, a=0, l=0, n=0;
+      sessions.forEach(s => {
+        const d = s.data[m.id];
+        if (!d || d.status === 'none') n++;
+        else if (d.status === 'present') p++;
+        else if (d.status === 'absent')  a++;
+        else if (d.status === 'late')    l++;
+      });
+      const total = sessions.length;
+      const rate = total > 0 ? Math.round((p + l) / total * 100) : 0;
+      totalRate += rate;
+      if (rate < 70) lowCount++;
+      const barClass = rate >= 80 ? 'bar-high' : rate >= 60 ? 'bar-mid' : 'bar-low';
+      const rateColor = rate >= 80 ? 'c-green' : rate >= 60 ? 'c-yellow' : 'c-red';
+      return `<tr>
+        <td class="name-cell">${m.name}</td>
+        <td><span class="role-tag role-${m.role}">${m.role}</span></td>
+        <td class="c-green">${p}</td>
+        <td class="c-yellow">${l}</td>
+        <td class="c-red">${a}</td>
+        <td style="color:var(--text3);">${n}</td>
+        <td>
+          <div class="rate-bar">
+            <div class="bar-bg"><div class="bar-fill ${barClass}" style="width:${rate}%"></div></div>
+            <span class="rate-text ${rateColor}">${rate}%</span>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    const avgRate = Math.round(totalRate / members.length);
+    document.getElementById('st-avgRate').textContent = avgRate + '%';
+    document.getElementById('st-lowCount').textContent = lowCount;
+
+    // 場次圖表
+    const chartEl = document.getElementById('sessionChart');
+    const recent = [...sessions].reverse().slice(-10);
+    const maxP = Math.max(...recent.map(s => {
+      const vals = Object.values(s.data);
+      return vals.filter(v => v.status === 'present' || v.status === 'late').length;
+    }), 1);
+    chartEl.innerHTML = recent.map(s => {
+      const vals = Object.values(s.data);
+      const p = vals.filter(v => v.status === 'present' || v.status === 'late').length;
+      const pct = Math.round(p / members.length * 100);
+      const h = Math.max(8, Math.round(p / maxP * 64));
+      const barClass = pct >= 80 ? 'bar-high' : pct >= 60 ? 'bar-mid' : 'bar-low';
+      const shortDate = s.date.slice(5);
+      return `
+        <div class="week-bar-wrap" title="${s.date} ${s.label}：出席率 ${pct}%">
+          <div class="week-bar-val">${pct}%</div>
+          <div class="week-bar ${barClass}" style="height:${h}px;"></div>
+          <div class="week-bar-label">${shortDate}</div>
+        </div>`;
+    }).join('');
+  }
+
+  // ══ 成員管理 ══
+  function renderMemberList() {
+    document.getElementById('memberCount').textContent = members.length;
+    const sorted = [...members].sort((a,b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role));
+    document.getElementById('memberList').innerHTML = sorted.map(m => `
+      <div class="member-row">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;flex-shrink:0;">${m.name.charAt(0)}</div>
+        <input type="text" value="${m.name}" onchange="updateMember(${m.id},'name',this.value)" style="flex:1;">
+        <select onchange="updateMember(${m.id},'role',this.value)" style="width:100px;">
+          ${['研究生','專題生','博士生','教授','助理','其他'].map(r => `<option ${r===m.role?'selected':''}>${r}</option>`).join('')}
+        </select>
+        <button class="btn-primary btn-danger" onclick="deleteMember(${m.id})" style="padding:7px 12px;font-size:13px;">✕</button>
+      </div>`).join('');
+  }
+
+  function addMember() {
+    const name = document.getElementById('newName').value.trim();
+    const role = document.getElementById('newRole').value;
+    if (!name) { showToast('⚠️ 請輸入姓名'); return; }
+    if (members.find(m => m.name === name)) { showToast('⚠️ 姓名重複'); return; }
+    members.push({ id: nextId++, name, role });
+    currentSession[nextId-1] = { status:'none', time:'' };
+    document.getElementById('newName').value = '';
+    renderMemberList();
+    renderCheckin();
+    updateCheckinStats();
+    showToast(`✅ 已新增 ${name}`);
+  }
+
+  function updateMember(id, field, val) {
+    const m = members.find(x => x.id === id);
+    if (m) { m[field] = val; renderCheckin(); renderMemberList(); }
+  }
+
+  function deleteMember(id) {
+    const m = members.find(x => x.id === id);
+    if (!confirm(`確定移除「${m?.name}」？`)) return;
+    members = members.filter(x => x.id !== id);
+    delete currentSession[id];
+    renderMemberList();
+    renderCheckin();
+    updateCheckinStats();
+    showToast('🗑 已移除成員');
+  }
+
+  // ══ 頁籤 ══
+  function switchTab(tab) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + tab).classList.add('active');
+    event.target.classList.add('active');
+    if (tab === 'stats') renderStats();
+    if (tab === 'history') renderHistory();
+    if (tab === 'members') renderMemberList();
+  }
+
+  // ══ Toast ══
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  init();
+</script>
+</body>
+</html>
