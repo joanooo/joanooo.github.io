@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>學生座位排列系統</title>
+  
+  <!-- 引入 html2canvas 用於高畫質截圖 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
+  <!-- 引入共用與專屬 CSS -->
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/tools/seat.css">
+</head>
+<body>
+
+<div class="header">
+  <span>🎓</span>
+  <h1>學生座位排列系統</h1>
+</div>
+
+<div class="container">
+  <!-- ── 左側控制列 ── -->
+  <div class="sidebar">
+    <div class="card">
+      <div class="card-title">📋 學生名單</div>
+      <label class="lbl">貼上名單（每行：學號 姓名 或 只有姓名）</label>
+      <textarea id="studentInput" placeholder="B11234 王小明&#10;B11235 李小華"></textarea>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-sm" onclick="parseStudents()">✅ 載入</button>
+        <button class="btn btn-outline btn-sm" onclick="loadSample()">📝 範例</button>
+        <button class="btn btn-gray btn-sm" onclick="clearStudents()">🗑 清除</button>
+      </div>
+      <div id="stuInfo" style="font-size:.75rem;color:#666;margin-top:6px"></div>
+      <div id="stuTags" class="tags"></div>
+    </div>
+    
+    <div class="card">
+      <div class="card-title">🏫 選擇教室（可多選）</div>
+      <div id="clsList"></div>
+      <div class="btn-row">
+        <button class="btn btn-outline btn-sm" onclick="openAddCls()">➕ 新增教室</button>
+      </div>
+      <div id="capWrap" style="display:none;margin-top:8px">
+        <div class="cap-bar"><div class="cap-fill" id="capFill"></div></div>
+        <div class="cap-text" id="capText"></div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-title">⚙️ 排列方式</div>
+      <div class="opt-item selected" id="opt-order" onclick="selMode('order')">
+        <input type="radio" name="mode" value="order" checked><span>📊 依學號排列</span>
+      </div>
+      <div class="opt-item" id="opt-random" onclick="selMode('random')">
+        <input type="radio" name="mode" value="random"><span>🎲 隨機排列</span>
+      </div>
+      <div class="opt-item" id="opt-name" onclick="selMode('name')">
+        <input type="radio" name="mode" value="name"><span>🔤 依姓名排列</span>
+      </div>
+      <div class="toggle-row" id="quincunxToggleRow">
+        <label class="toggle">
+          <input type="checkbox" id="quincunxToggle" onchange="onQuincunxToggle()">
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="toggle-label">🌸 梅花座（前後左右不相鄰）</span>
+      </div>
+      <div id="quincunxInfo" style="font-size:.75rem;color:#888;margin-top:4px;display:none;padding:0 4px">
+        每個有人的座位，其上下左右四格皆為空位
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-full" onclick="assignSeats()">🪄 開始排座位</button>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-title">💾 匯出 / 操作</div>
+      <div class="btn-row">
+        <button class="btn btn-success btn-sm" onclick="exportCSV()">📥 CSV</button>
+        <button class="btn btn-primary btn-sm" onclick="downloadImage()">📸 截圖</button>
+        <button class="btn btn-warning btn-sm" onclick="exportPrint()">🖨️ 列印</button>
+        <button class="btn btn-danger btn-sm" onclick="resetAll()">🔄 重設</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 右側主內容區 ── -->
+  <div class="main">
+    <div id="alertArea"></div>
+    <div class="tabs">
+      <div class="tab active" id="tab-seat" onclick="switchTab('seat')">🪄 座位圖</div>
+      <div class="tab" id="tab-list" onclick="switchTab('list')">📋 名單列表</div>
+    </div>
+    
+    <div id="view-seat">
+      <div id="clsViews">
+        <div class="no-result"><div class="icon">🏫</div>請先選擇教室並載入學生名單，<br>然後點擊「開始排座位」</div>
+      </div>
+    </div>
+    
+    <div id="view-list" style="display:none">
+      <div class="card">
+        <div class="card-title">📋 座位名單</div>
+        <div id="listContent"><div class="no-result"><div class="icon">📋</div>尚未排列座位</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 彈出視窗：新增教室 ── -->
+<div class="modal-overlay" id="addClsModal">
+  <div class="modal">
+    <h3>➕ 新增教室</h3>
+    <div class="form-group">
+      <label class="lbl">教室名稱</label>
+      <input type="text" id="newClsName" placeholder="例如：EB107">
+    </div>
+    <div class="form-group">
+      <label class="lbl">座位配置（每行一排，數字為各區塊座位數，逗號分隔）</label>
+      <textarea id="newClsLayout" placeholder="2,2,2,0&#10;3,3,3,3" style="min-height:90px"></textarea>
+      <div style="font-size:.72rem;color:#888;margin-top:3px">0 = 該排該區塊無座位</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-gray" onclick="closeModal('addClsModal')">取消</button>
+      <button class="btn btn-primary" onclick="addCls()">新增</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 彈出視窗：編輯座位 ── -->
+<div class="modal-overlay" id="seatModal">
+  <div class="modal">
+    <h3>✏️ 編輯座位</h3>
+    <div id="seatModalInfo" style="font-size:.82rem;color:#666;margin-bottom:10px"></div>
+    <div class="form-group">
+      <label class="lbl">指派學生</label>
+      <select id="seatSelect"><option value="">-- 空座位 --</option></select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-gray" onclick="closeModal('seatModal')">取消</button>
+      <button class="btn btn-danger btn-sm" onclick="clearSeat()">清除</button>
+      <button class="btn btn-primary" onclick="saveSeat()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 引入獨立的 JavaScript -->
+<script src="../js/tools/seat.js" defer></script>
+
+</body>
+</html>

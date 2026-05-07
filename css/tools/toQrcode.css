@@ -1,0 +1,127 @@
+/* =========================================
+   QR Code 產生器專屬樣式 (toQrcode Styles)
+   ========================================= */
+body {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: sans-serif;
+  padding: 24px;
+}
+
+.card {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 24px;
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* --- 標題 --- */
+.header { text-align: center; }
+.header .icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 12px rgba(139,92,246,0.8));
+}
+.header h1 { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: 2px; }
+.header p { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+
+/* --- 輸入區 --- */
+.input-group { display: flex; flex-direction: column; gap: 8px; }
+.input-group label { font-size: 13px; font-weight: bold; color: #a5b4fc; letter-spacing: 1px; text-transform: uppercase; }
+.input-group textarea {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.3);
+  color: #e2e8f0;
+  font-size: 15px;
+  font-family: sans-serif;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 0.2s;
+  line-height: 1.6;
+}
+.input-group textarea:focus { outline: none; border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.2); }
+.input-group textarea::placeholder { color: #475569; }
+
+/* --- 選項列 --- */
+.options-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.option-group { display: flex; flex-direction: column; gap: 6px; }
+.option-group label { font-size: 12px; font-weight: bold; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; }
+.option-group select, .option-group input[type="color"] {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.3);
+  color: #e2e8f0;
+  font-size: 14px;
+  cursor: pointer;
+}
+.option-group select:focus { outline: none; border-color: #7c3aed; }
+
+/* --- 顏色選擇器 --- */
+.color-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.color-picker-group { display: flex; flex-direction: column; gap: 6px; }
+.color-picker-group label { font-size: 12px; font-weight: bold; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; }
+.color-picker-wrap {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px; padding: 6px 12px;
+}
+.color-picker-wrap input[type="color"] { width: 32px; height: 32px; border: none; border-radius: 6px; cursor: pointer; padding: 0; background: none; }
+.color-picker-wrap span { font-size: 13px; color: #cbd5e1; font-family: monospace; }
+
+/* --- 產生按鈕 --- */
+.btn-generate {
+  padding: 15px;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  color: white; border: none; border-radius: 12px;
+  cursor: pointer; font-size: 16px; font-weight: bold;
+  letter-spacing: 2px; transition: all 0.2s;
+  box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+}
+.btn-generate:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(124,58,237,0.6); }
+.btn-generate:active { transform: translateY(0); }
+
+/* --- QR Code 顯示區 --- */
+.qr-display { display: none; flex-direction: column; align-items: center; gap: 16px; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.qr-box { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 0 40px rgba(124,58,237,0.3); display: inline-flex; align-items: center; justify-content: center; }
+#qrcode canvas, #qrcode img { display: block; }
+.qr-info { text-align: center; font-size: 13px; color: #64748b; max-width: 300px; word-break: break-all; line-height: 1.6; }
+.qr-info strong { color: #a5b4fc; }
+
+/* --- 下載按鈕群 --- */
+.download-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.btn-dl { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: bold; transition: all 0.15s; display: flex; align-items: center; gap: 6px; }
+.btn-dl-png { background: #059669; color: white; box-shadow: 0 3px 12px rgba(5,150,105,0.3); }
+.btn-dl-png:hover { background: #047857; transform: translateY(-1px); }
+.btn-dl-svg { background: #0891b2; color: white; box-shadow: 0 3px 12px rgba(8,145,178,0.3); }
+.btn-dl-svg:hover { background: #0e7490; transform: translateY(-1px); }
+.btn-dl-copy { background: #7c3aed; color: white; box-shadow: 0 3px 12px rgba(124,58,237,0.3); }
+.btn-dl-copy:hover { background: #6d28d9; transform: translateY(-1px); }
+.btn-dl-copy.copied { background: #059669; }
+
+/* --- 字元計數與分隔線 --- */
+.char-count { text-align: right; font-size: 12px; color: #475569; margin-top: -4px; }
+.char-count.warn { color: #f59e0b; }
+.char-count.over { color: #ef4444; }
+.divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); }
+
+/* --- RWD --- */
+@media (max-width: 480px) {
+  .card { padding: 28px 20px; }
+  .options-row, .color-row { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Code 產生器</title>
+  
+  <!-- 引入 QR Code 核心套件 -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  
+  <!-- 引入共用與專屬 CSS -->
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/tools/toQrcode.css">
+</head>
+<body>
+
+<div class="card">
+  <!-- 標題 -->
+  <div class="header">
+    <span class="icon">⬛</span>
+    <h1>QR Code 產生器</h1>
+    <p>輸入任意文字或網址，即時產生 QR Code</p>
+  </div>
+
+  <!-- 輸入 -->
+  <div class="input-group">
+    <label>輸入文字 / 網址</label>
+    <textarea id="inputText" placeholder="https://example.com&#10;或輸入任意文字..." oninput="updateCharCount()"></textarea>
+    <div class="char-count" id="charCount">0 字元</div>
+  </div>
+
+  <!-- 尺寸 & 容錯率 -->
+  <div class="options-row">
+    <div class="option-group">
+      <label>尺寸</label>
+      <select id="qrSize">
+        <option value="128">128 × 128</option>
+        <option value="200">200 × 200</option>
+        <option value="256" selected>256 × 256</option>
+        <option value="512">512 × 512</option>
+      </select>
+    </div>
+    <div class="option-group">
+      <label>容錯率</label>
+      <select id="qrCorrect">
+        <option value="L">L（低 7%）</option>
+        <option value="M" selected>M（中 15%）</option>
+        <option value="Q">Q（高 25%）</option>
+        <option value="H">H（最高 30%）</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 顏色 -->
+  <div class="color-row">
+    <div class="color-picker-group">
+      <label>QR 顏色</label>
+      <div class="color-picker-wrap">
+        <input type="color" id="colorDark" value="#000000" oninput="syncColorLabel('colorDark','labelDark')">
+        <span id="labelDark">#000000</span>
+      </div>
+    </div>
+    <div class="color-picker-group">
+      <label>背景顏色</label>
+      <div class="color-picker-wrap">
+        <input type="color" id="colorLight" value="#ffffff" oninput="syncColorLabel('colorLight','labelLight')">
+        <span id="labelLight">#ffffff</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 產生按鈕 -->
+  <button class="btn-generate" onclick="generateQR()">⚡ 產生 QR Code</button>
+
+  <!-- QR Code 顯示 -->
+  <hr class="divider" id="divider" style="display:none;">
+  <div class="qr-display" id="qrDisplay">
+    <div class="qr-box">
+      <div id="qrcode"></div>
+    </div>
+    <div class="qr-info" id="qrInfo"></div>
+    <div class="download-row">
+      <button class="btn-dl btn-dl-png" onclick="downloadPNG()">⬇️ 下載 PNG</button>
+      <button class="btn-dl btn-dl-svg" onclick="downloadSVG()">⬇️ 下載 SVG</button>
+      <button class="btn-dl btn-dl-copy" id="btnCopyImg" onclick="copyImage()">📋 複製圖片</button>
+    </div>
+  </div>
+</div>
+
+<!-- 引入獨立的 JavaScript -->
+<script src="../js/tools/toQrcode.js" defer></script>
+
+</body>
+</html>

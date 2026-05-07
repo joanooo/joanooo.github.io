@@ -1,0 +1,196 @@
+/* =========================================
+   首頁專屬樣式 (Index Styles)
+   ========================================= */
+body {
+  background: #0a0a0a;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* --- 背景光暈 --- */
+.bg-glow {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+.glow-1 {
+  width: clamp(300px, 50vw, 600px);
+  height: clamp(300px, 50vw, 600px);
+  background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+  top: -150px; left: -150px;
+  animation: drift1 12s ease-in-out infinite;
+}
+.glow-2 {
+  width: clamp(250px, 40vw, 500px);
+  height: clamp(250px, 40vw, 500px);
+  background: radial-gradient(circle, rgba(236,72,153,0.08) 0%, transparent 70%);
+  bottom: -100px; right: -100px;
+  animation: drift2 15s ease-in-out infinite;
+}
+.glow-3 {
+  width: clamp(150px, 25vw, 300px);
+  height: clamp(150px, 25vw, 300px);
+  background: radial-gradient(circle, rgba(34,211,238,0.06) 0%, transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  animation: drift3 10s ease-in-out infinite;
+}
+
+@keyframes drift1 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(40px, 30px); }
+}
+@keyframes drift2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-30px, -40px); }
+}
+@keyframes drift3 {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.2); }
+}
+
+/* --- 流星 canvas --- */
+#meteor-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* --- 主體結構 --- */
+.center {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: clamp(16px, 4vw, 40px);
+  width: 100%;
+}
+
+/* --- 文字排版 --- */
+.main-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(64px, 18vw, 160px);
+  font-weight: 900;
+  letter-spacing: clamp(-2px, -0.5vw, -4px);
+  line-height: 1;
+  background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 30%, #a5b4fc 55%, #818cf8 75%, #6366f1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: fadeUp 1.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  position: relative;
+}
+
+.main-title::after {
+  content: 'Joanoo';
+  position: absolute;
+  top: 0; left: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  pointer-events: none;
+}
+
+.subtitle {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(12px, 2.5vw, 20px);
+  font-weight: 300;
+  font-style: italic;
+  color: rgba(148, 163, 184, 0.7);
+  letter-spacing: clamp(3px, 1.5vw, 6px);
+  margin-top: 8px;
+  animation: fadeUp 1.2s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.line {
+  width: clamp(40px, 8vw, 60px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #6366f1, transparent);
+  margin: clamp(16px, 4vw, 28px) auto;
+  animation: fadeUp 1.2s 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* --- 按鈕區塊 --- */
+.tools {
+  display: flex;
+  gap: clamp(8px, 2vw, 16px);
+  flex-wrap: wrap;
+  justify-content: center;
+  animation: fadeUp 1.2s 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  max-width: 600px;
+  width: 100%;
+}
+
+.tool-link {
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(11px, 1.8vw, 13px);
+  font-weight: 300;
+  letter-spacing: clamp(1px, 0.5vw, 2px);
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.6);
+  text-decoration: none;
+  padding: clamp(8px, 1.5vw, 10px) clamp(14px, 3vw, 22px);
+  border: 1px solid rgba(99,102,241,0.2);
+  border-radius: 40px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+  background: rgba(99,102,241,0.04);
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.tool-link:hover, .tool-link:active {
+  color: #a5b4fc;
+  border-color: rgba(99,102,241,0.6);
+  background: rgba(99,102,241,0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(99,102,241,0.15);
+}
+
+.footer-dot {
+  position: fixed;
+  bottom: clamp(12px, 3vw, 24px);
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(9px, 1.5vw, 11px);
+  letter-spacing: 2px;
+  color: rgba(71, 85, 105, 0.5);
+  text-transform: uppercase;
+  animation: fadeUp 1.2s 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* --- RWD 響應式 --- */
+@media (max-width: 480px) {
+  .subtitle { letter-spacing: 3px; }
+  .tools { gap: 8px; }
+}
+@media (min-width: 481px) and (max-width: 1024px) {
+  .main-title { font-size: clamp(80px, 15vw, 130px); }
+}
+@media (hover: none) {
+  .tool-link:hover { transform: none; }
+  .tool-link:active {
+    transform: scale(0.97);
+    background: rgba(99,102,241,0.12);
+  }
+}

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>會議記錄產生器</title>
+  
+  <!-- 引入共用與專屬 CSS -->
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/tools/meeting.css">
+</head>
+<body>
+
+<!-- 手機頂部 Header (來自 layout.css) -->
+<div class="mobile-header" id="mobileHeader">
+  <span>📋 會議記錄產生器</span>
+  <button class="hamburger" onclick="togglePanel()">
+    <span></span><span></span><span></span>
+  </button>
+</div>
+
+<div class="overlay" id="overlay" onclick="togglePanel()"></div>
+
+<!-- 左側面板 (來自 layout.css) -->
+<div class="panel" id="panel">
+  <h1>📋 會議記錄產生器</h1>
+
+  <div>
+    <div class="section-title">基本資訊</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="form-group"><label>單位 / 系所名稱</label><input type="text" id="orgName" value="國立成功大學電機工程學系"></div>
+      <div class="form-group"><label>會議名稱</label><input type="text" id="meetingName" value="研究室週會"></div>
+      <div class="form-group"><label>屆次 / 期數（可留空）</label><input type="text" id="meetingSession" placeholder="例：第 3 次、114學年度第2學期第1次"></div>
+      <div class="two-col">
+        <div class="form-group"><label>會議日期</label><input type="date" id="meetingDate" value="2026-03-27"></div>
+        <div class="form-group"><label>會議時間</label><input type="time" id="meetingTime" value="14:00"></div>
+      </div>
+      <div class="form-group"><label>會議地點</label><input type="text" id="meetingPlace" value="電機系館 92315 室"></div>
+      <div class="form-group"><label>主席</label><input type="text" id="chairperson" value="陳靜茹"></div>
+      <div class="form-group"><label>記錄人</label><input type="text" id="recorder" value="石廷安"></div>
+    </div>
+  </div>
+
+  <hr style="border-color:#1e3a5f;">
+
+  <div>
+    <div class="section-title">出席人員</div>
+    <div class="attendee-list" id="attendeeList"></div>
+    <button class="btn-add-agenda" style="margin-top:8px;" onclick="addAttendee()">＋ 新增人員</button>
+  </div>
+
+  <hr style="border-color:#1e3a5f;">
+
+  <div>
+    <div class="section-title">議題列表</div>
+    <div class="agenda-list" id="agendaList"></div>
+    <button class="btn-add-agenda" onclick="addAgenda()">＋ 新增議題</button>
+  </div>
+
+  <hr style="border-color:#1e3a5f;">
+
+  <div>
+    <div class="section-title">臨時動議</div>
+    <div class="form-group"><textarea id="miscMotion" placeholder="如無臨時動議請留空…" style="min-height:70px;"></textarea></div>
+  </div>
+
+  <button class="btn-generate" onclick="generate()">📄 產生會議記錄</button>
+</div>
+
+<!-- 右側預覽區 (來自 meeting.css) -->
+<div class="preview-area">
+  <div class="preview-toolbar" id="toolbar">
+    <button class="btn-print" onclick="window.print()">🖨️ 列印 / 存成 PDF</button>
+    <button class="btn-copy-text" id="btnCopyText" onclick="copyText()">📋 複製純文字</button>
+    <div class="zoom-controls">
+      <button class="zoom-btn" onclick="changeZoom(-10)">−</button>
+      <span class="zoom-label" id="zoomLabel">100%</span>
+      <button class="zoom-btn" onclick="changeZoom(10)">＋</button>
+      <button class="zoom-btn" onclick="resetZoom()" style="font-size:13px;">↺</button>
+    </div>
+  </div>
+  <div class="a4-wrapper" id="a4Wrapper">
+    <div id="previewContent">
+      <div class="placeholder">⬅️ 填寫左側資訊後<br>點擊「產生會議記錄」按鈕</div>
+    </div>
+  </div>
+</div>
+
+<!-- 引入獨立的 JavaScript -->
+<script src="../js/tools/meeting.js" defer></script>
+
+</body>
+</html>

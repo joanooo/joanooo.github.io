@@ -1,0 +1,167 @@
+/* =========================================
+   ASCII 藝術產生器專屬樣式 (ASCII Styles)
+   ========================================= */
+:root {
+  --bg: #0d1117; --surface: #161b22; --surface2: #21262d;
+  --border: #30363d; --accent: #58a6ff; --accent2: #bc8cff;
+  --green: #3fb950; --red: #f85149; --yellow: #d29922;
+  --text: #e6edf3; --text2: #8b949e; --text3: #484f58;
+}
+
+body { 
+  background: var(--bg); 
+  color: var(--text); 
+  font-family: 'Segoe UI', sans-serif; 
+  min-height: 100vh; 
+  display: flex; 
+  flex-direction: column; 
+}
+
+/* --- 頂部導覽列 --- */
+.topbar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 14px 24px; display: flex; align-items: center; gap: 12px;
+  position: sticky; top: 0; z-index: 50;
+}
+.topbar-title { font-size: 18px; font-weight: bold; color: var(--text); }
+.topbar-title span { color: var(--accent); }
+.topbar-sub { font-size: 12px; color: var(--text2); margin-left: 4px; }
+
+/* --- 佈局 --- */
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* --- 左側控制列 --- */
+.sidebar {
+  width: 300px; min-width: 260px; background: var(--surface);
+  border-right: 1px solid var(--border); padding: 20px 16px;
+  overflow-y: auto; display: flex; flex-direction: column; gap: 18px;
+}
+.sec-title {
+  font-size: 11px; font-weight: bold; color: var(--text2);
+  letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* --- 表單元件 --- */
+.form-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+.form-row label { font-size: 12px; color: var(--text2); display: flex; justify-content: space-between; }
+.form-row label span { color: var(--accent); font-weight: bold; }
+input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+select, input[type=text] {
+  width: 100%; padding: 8px 10px; border-radius: 7px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text); font-size: 13px;
+}
+select:focus, input:focus { outline: none; border-color: var(--accent); }
+
+/* --- 上傳區 --- */
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: 12px;
+  padding: 28px 16px; text-align: center; cursor: pointer;
+  transition: all 0.2s; background: var(--bg);
+}
+.upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: rgba(88,166,255,0.05); }
+.upload-icon { font-size: 36px; margin-bottom: 10px; }
+.upload-text { font-size: 13px; color: var(--text2); line-height: 1.7; }
+.upload-text strong { color: var(--accent); }
+#fileInput { display: none; }
+.preview-thumb {
+  width: 100%; border-radius: 8px; border: 1px solid var(--border);
+  display: none; margin-top: 10px; max-height: 160px; object-fit: contain; background: #000;
+}
+
+/* --- 按鈕 --- */
+.btn {
+  width: 100%; padding: 11px; border: none; border-radius: 9px;
+  cursor: pointer; font-size: 14px; font-weight: bold;
+  transition: all 0.15s; letter-spacing: 0.5px;
+}
+.btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; }
+.btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+.btn-sm {
+  padding: 6px 14px; font-size: 12px; font-weight: bold;
+  border: none; border-radius: 6px; cursor: pointer; transition: all 0.15s;
+}
+.btn-copy { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+.btn-copy.copied { background: rgba(63,185,80,0.15); color: var(--green); border-color: var(--green); }
+.btn-dl { background: rgba(63,185,80,0.1); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+.btn-dl:hover { background: rgba(63,185,80,0.22); }
+.btn-invert { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+.btn-invert.on { background: rgba(188,140,255,0.15); color: var(--accent2); border-color: var(--accent2); }
+
+/* --- 字元集與顏色 --- */
+.charset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.charset-btn {
+  padding: 7px 6px; border-radius: 7px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text2); cursor: pointer;
+  font-size: 11px; text-align: center; transition: all 0.15s;
+}
+.charset-btn:hover { border-color: var(--accent); color: var(--text); }
+.charset-btn.active { border-color: var(--accent); background: rgba(88,166,255,0.1); color: var(--accent); font-weight: bold; }
+.charset-preview { font-family: monospace; font-size: 10px; color: var(--text3); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.color-btn {
+  padding: 8px 4px; border-radius: 7px; border: 1px solid var(--border);
+  cursor: pointer; font-size: 11px; text-align: center; transition: all 0.15s; font-weight: bold;
+}
+.color-btn:hover { border-color: var(--accent); }
+.color-btn.active { border-color: var(--accent); background: rgba(88,166,255,0.1); }
+
+/* --- 文字輸入 --- */
+.text-input-wrap { display: flex; flex-direction: column; gap: 6px; }
+.text-input-wrap textarea {
+  width: 100%; padding: 9px 11px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text); font-size: 13px; font-family: sans-serif;
+  resize: vertical; min-height: 60px;
+}
+.text-input-wrap textarea:focus { outline: none; border-color: var(--accent); }
+
+/* --- 右側輸出區 --- */
+.output-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.output-toolbar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 10px 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.output-toolbar-title { font-size: 13px; color: var(--text2); flex: 1; }
+.output-wrap { flex: 1; overflow: auto; padding: 16px; }
+#asciiOutput {
+  font-family: 'Courier New', 'Lucida Console', monospace;
+  white-space: pre; line-height: 1.2;
+  display: block; width: fit-content; min-width: 100%;
+}
+#asciiOutput.color-white { color: #e6edf3; }
+#asciiOutput.color-green { color: #3fb950; }
+#asciiOutput.color-amber { color: #d29922; }
+#asciiOutput.color-cyan  { color: #39c5cf; }
+#asciiOutput.color-pink  { color: #f778ba; }
+#asciiOutput.color-rgb   { color: inherit; }
+
+.placeholder-msg {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%; min-height: 300px; color: var(--text3); gap: 12px;
+}
+.placeholder-msg .big { font-size: 56px; }
+.placeholder-msg p { font-size: 14px; line-height: 1.8; text-align: center; }
+
+/* --- Toast --- */
+.toast {
+  position: fixed; bottom: 20px; right: 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 11px 18px; font-size: 13px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  transform: translateY(60px); opacity: 0; transition: all 0.3s; z-index: 999;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* --- RWD --- */
+@media (max-width: 700px) {
+  .main { flex-direction: column; }
+  .sidebar { width: 100%; min-width: unset; border-right: none; border-bottom: 1px solid var(--border); max-height: 60vh; }
+  .output-area { min-height: 40vh; }
+}

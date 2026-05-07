@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Joanoo</title>
+  
+  <!-- 引入 Google 字型 -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&family=Inter:wght@300;400&display=swap" rel="stylesheet">
+  
+  <!-- 引入拆分後的 CSS -->
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+
+  <!-- 背景光暈 -->
+  <div class="bg-glow glow-1"></div>
+  <div class="bg-glow glow-2"></div>
+  <div class="bg-glow glow-3"></div>
+
+  <!-- 流星畫布 -->
+  <canvas id="meteor-canvas"></canvas>
+
+  <!-- 主內容區 -->
+  <div class="center">
+    <h1 class="main-title">Joanoo</h1>
+    <p class="subtitle">tools &amp; utilities</p>
+    <div class="line"></div>
+    
+    <!-- 工具選單 -->
+    <div class="tools">
+      <a href="pages/officialleave.html" class="tool-link">📋 差假證明</a>
+      <a href="pages/seat.html" class="tool-link">🪑 乖乖坐好</a>
+      <a href="pages/toQrcode.html" class="tool-link">⚡ QQRcode</a>
+      <a href="pages/meeting.html" class="tool-link">📝 咪挺不過去</a>
+      <a href="pages/img.html" class="tool-link">🖼️ 一米舉</a>
+      <a href="pages/ASCII.html" class="tool-link">⬛ ASCII</a>
+      <a href="pages/come.html" class="tool-link">⏰ 出勤紀錄</a>
+      <a href="pages/topdf.html" class="tool-link">🔄 轉 PDF</a>
+      <a href="#" class="tool-link" style="opacity:0.35;pointer-events:none;">即將推出</a>
+    </div>
+  </div>
+
+  <p class="footer-dot">© 2026 Joanoo</p>
+
+  <!-- 引入獨立的 JavaScript (defer 確保 HTML 載入完才執行) -->
+  <script src="js/index.js" defer></script>
+
+</body>
+</html>

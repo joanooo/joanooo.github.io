@@ -1,0 +1,197 @@
+/* =========================================
+   出勤紀錄系統專屬樣式 (Attendance Styles)
+   ========================================= */
+:root {
+  --bg: #0f172a; --surface: #1e293b; --surface2: #273549;
+  --border: #334155; --accent: #3b82f6; --accent2: #7c3aed;
+  --green: #10b981; --red: #ef4444; --yellow: #f59e0b; --gray: #64748b;
+  --text: #e2e8f0; --text2: #94a3b8; --text3: #475569;
+}
+
+body { background: var(--bg); color: var(--text); font-family: sans-serif; min-height: 100vh; }
+
+/* --- 頂部導覽 --- */
+.topbar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0 24px; display: flex; align-items: center; gap: 0;
+  position: sticky; top: 0; z-index: 50;
+}
+.topbar-brand { font-size: 16px; font-weight: bold; color: #fff; padding: 16px 0; margin-right: 24px; white-space: nowrap; }
+.topbar-brand span { color: var(--accent); }
+.tab-btn {
+  padding: 16px 18px; background: none; border: none; color: var(--text2);
+  cursor: pointer; font-size: 14px; border-bottom: 3px solid transparent;
+  transition: all 0.15s; white-space: nowrap;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: bold; }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.clock { font-size: 13px; color: var(--text2); font-family: monospace; }
+
+/* --- 頁面與卡片 --- */
+.page { display: none; padding: 24px; max-width: 1200px; margin: 0 auto; }
+.page.active { display: block; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 20px; }
+.card-title { font-size: 14px; font-weight: bold; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+/* --- 統計卡 --- */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; text-align: center; }
+.stat-num { font-size: 32px; font-weight: bold; margin-bottom: 4px; }
+.stat-label { font-size: 12px; color: var(--text2); }
+.c-blue { color: var(--accent); } .c-green { color: var(--green); }
+.c-red { color: var(--red); } .c-yellow { color: var(--yellow); }
+
+/* --- 簽到區 --- */
+.checkin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.member-card {
+  background: var(--surface2); border: 2px solid var(--border);
+  border-radius: 12px; padding: 14px 10px; text-align: center;
+  cursor: pointer; transition: all 0.2s; user-select: none; position: relative;
+}
+.member-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.member-card.present { border-color: var(--green); background: rgba(16,185,129,0.08); }
+.member-card.absent  { border-color: var(--red);   background: rgba(239,68,68,0.08); }
+.member-card.late    { border-color: var(--yellow); background: rgba(245,158,11,0.08); }
+.member-avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: bold; margin: 0 auto 8px;
+  background: var(--border); color: var(--text);
+}
+.member-card.present .member-avatar { background: rgba(16,185,129,0.2); color: var(--green); }
+.member-card.absent  .member-avatar { background: rgba(239,68,68,0.2);  color: var(--red); }
+.member-card.late    .member-avatar { background: rgba(245,158,11,0.2); color: var(--yellow); }
+.member-name { font-size: 14px; font-weight: bold; margin-bottom: 4px; }
+.member-role { font-size: 11px; color: var(--text2); margin-bottom: 6px; }
+.member-status { font-size: 12px; font-weight: bold; }
+.member-time { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.status-badge {
+  position: absolute; top: 8px; right: 8px;
+  width: 10px; height: 10px; border-radius: 50%;
+}
+.badge-present { background: var(--green); }
+.badge-absent  { background: var(--red); }
+.badge-late    { background: var(--yellow); }
+.badge-none    { background: var(--border); }
+
+/* --- 狀態切換按鈕 --- */
+.status-btns { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.sbtn {
+  padding: 7px 16px; border: none; border-radius: 8px;
+  cursor: pointer; font-size: 13px; font-weight: bold; transition: opacity 0.15s;
+}
+.sbtn:hover { opacity: 0.85; }
+.sbtn-present { background: var(--green); color: white; }
+.sbtn-absent  { background: var(--red);   color: white; }
+.sbtn-late    { background: var(--yellow); color: #1a1a1a; }
+.sbtn-reset   { background: var(--border); color: var(--text); }
+.sbtn-all-present { background: linear-gradient(135deg,#059669,#10b981); color: white; }
+
+/* --- 日期選擇 --- */
+.date-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.date-row input[type=date], .date-row input[type=text], .date-row select {
+  padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); font-size: 14px;
+}
+.date-row input:focus, .date-row select:focus { outline: none; border-color: var(--accent); }
+.btn-primary {
+  padding: 8px 18px; background: var(--accent); color: white;
+  border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: #2563eb; }
+.btn-danger { background: var(--red); }
+.btn-danger:hover { background: #dc2626; }
+.btn-success { background: var(--green); }
+.btn-success:hover { background: #059669; }
+
+/* --- 出勤表格 --- */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: var(--surface2); color: var(--text2); padding: 10px 12px; text-align: center; border-bottom: 2px solid var(--border); white-space: nowrap; font-weight: bold; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--border); text-align: center; vertical-align: middle; }
+tr:hover td { background: rgba(255,255,255,0.03); }
+td.name-cell { text-align: left; font-weight: bold; }
+td.role-cell { font-size: 12px; color: var(--text2); }
+
+/* 出勤格 */
+.att-cell { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
+.att-cell:hover { transform: scale(1.15); }
+.att-p { background: rgba(16,185,129,0.2); color: var(--green); }
+.att-a { background: rgba(239,68,68,0.2);  color: var(--red); }
+.att-l { background: rgba(245,158,11,0.2); color: var(--yellow); }
+.att-n { background: var(--border); color: var(--text3); }
+
+/* 出勤率 bar */
+.rate-bar { display: flex; align-items: center; gap: 8px; }
+.bar-bg { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; min-width: 60px; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+.bar-high { background: var(--green); }
+.bar-mid  { background: var(--yellow); }
+.bar-low  { background: var(--red); }
+.rate-text { font-size: 12px; font-weight: bold; min-width: 38px; text-align: right; }
+
+/* --- 歷史紀錄 --- */
+.history-item {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 14px; cursor: pointer;
+  transition: border-color 0.15s;
+}
+.history-item:hover { border-color: var(--accent); }
+.history-date { font-size: 15px; font-weight: bold; color: var(--accent); min-width: 120px; }
+.history-label { font-size: 13px; color: var(--text2); flex: 1; }
+.history-badges { display: flex; gap: 6px; }
+.hbadge { font-size: 12px; padding: 3px 9px; border-radius: 20px; font-weight: bold; }
+.hbadge-p { background: rgba(16,185,129,0.15); color: var(--green); }
+.hbadge-a { background: rgba(239,68,68,0.15);  color: var(--red); }
+.hbadge-l { background: rgba(245,158,11,0.15); color: var(--yellow); }
+.history-del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; padding: 4px; transition: color 0.15s; }
+.history-del:hover { color: var(--red); }
+
+/* --- 成員管理 --- */
+.member-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.member-row:last-child { border-bottom: none; }
+.member-row input, .member-row select { padding: 7px 10px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px; }
+.member-row input { flex: 1; }
+.member-row select { width: 100px; }
+
+/* --- 空狀態 --- */
+.empty { text-align: center; padding: 40px; color: var(--text3); font-size: 14px; }
+
+/* --- 通知 --- */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: #1e293b; border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 20px;
+  font-size: 14px; color: var(--text);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  transform: translateY(80px); opacity: 0;
+  transition: all 0.3s; z-index: 999;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* --- 角色標籤 --- */
+.role-tag { display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 20px; }
+.role-研究生 { background: #1e3a5f; color: #93c5fd; }
+.role-專題生 { background: #14532d; color: #86efac; }
+.role-博士生 { background: #3b0764; color: #d8b4fe; }
+.role-教授   { background: #451a03; color: #fcd34d; }
+.role-助理   { background: #1e293b; color: #94a3b8; }
+.role-其他   { background: #1e293b; color: #94a3b8; }
+
+/* --- 週統計圖 --- */
+.week-chart { display: flex; align-items: flex-end; gap: 8px; height: 80px; padding: 0 4px; }
+.week-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+.week-bar { width: 100%; border-radius: 4px 4px 0 0; transition: height 0.4s; min-height: 4px; }
+.week-bar-label { font-size: 10px; color: var(--text2); }
+.week-bar-val { font-size: 10px; color: var(--text); font-weight: bold; }
+
+/* --- RWD --- */
+@media (max-width: 700px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .checkin-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .topbar { overflow-x: auto; }
+  .page { padding: 14px; }
+}

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASCII 藝術產生器</title>
+  
+  <!-- 引入共用與專屬 CSS -->
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/tools/ASCII.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">⬛ <span>ASCII</span> 藝術產生器</div>
+  <span class="topbar-sub">圖片 → 字元畫</span>
+</div>
+
+<div class="main">
+  <!-- ── 左側控制 ── -->
+  <div class="sidebar">
+
+    <!-- 上傳圖片 -->
+    <div>
+      <div class="sec-title">📂 上傳圖片</div>
+      <div class="upload-zone" id="uploadZone"
+        onclick="document.getElementById('fileInput').click()"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="handleDrop(event)">
+        <div class="upload-icon">🖼️</div>
+        <div class="upload-text">
+          <strong>點擊上傳</strong>或拖曳圖片<br>
+          <span style="font-size:11px;">JPG、PNG、GIF、WebP、BMP</span>
+        </div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" onchange="loadImage(event)">
+      <img id="previewThumb" class="preview-thumb" alt="預覽">
+    </div>
+
+    <hr style="border-color:var(--border);">
+
+    <!-- 輸出設定 -->
+    <div>
+      <div class="sec-title">⚙️ 輸出設定</div>
+      <div class="form-row">
+        <label>字元寬度 <span id="widthVal">120</span></label>
+        <input type="range" id="widthRange" min="20" max="300" value="120"
+          oninput="document.getElementById('widthVal').textContent=this.value">
+      </div>
+      <div class="form-row">
+        <label>對比度 <span id="contrastVal">1.0</span></label>
+        <input type="range" id="contrastRange" min="0.5" max="3.0" step="0.1" value="1.0"
+          oninput="document.getElementById('contrastVal').textContent=parseFloat(this.value).toFixed(1)">
+      </div>
+      <div class="form-row">
+        <label>亮度 <span id="brightnessVal">1.0</span></label>
+        <input type="range" id="brightnessRange" min="0.3" max="2.0" step="0.1" value="1.0"
+          oninput="document.getElementById('brightnessVal').textContent=parseFloat(this.value).toFixed(1)">
+      </div>
+      <div class="form-row">
+        <label>縱橫比修正 <span id="ratioVal">0.45</span></label>
+        <input type="range" id="ratioRange" min="0.3" max="0.7" step="0.01" value="0.45"
+          oninput="document.getElementById('ratioVal').textContent=parseFloat(this.value).toFixed(2)">
+      </div>
+    </div>
+
+    <!-- 字元集 -->
+    <div>
+      <div class="sec-title">🔤 字元集</div>
+      <div class="charset-grid" id="charsetGrid"></div>
+      <div class="form-row" style="margin-top:8px;">
+        <label>自訂字元集（暗→亮）</label>
+        <input type="text" id="customCharset" placeholder="例： .:-=+*#%@" style="font-family:monospace;">
+      </div>
+    </div>
+
+    <!-- 顏色模式 -->
+    <div>
+      <div class="sec-title">🎨 顏色模式</div>
+      <div class="color-grid" id="colorGrid"></div>
+    </div>
+
+    <hr style="border-color:var(--border);">
+
+    <!-- 文字轉大字 -->
+    <div>
+      <div class="sec-title">✏️ 文字轉大字</div>
+      <div class="text-input-wrap">
+        <textarea id="textInput" placeholder="輸入文字，例：HELLO" rows="2"></textarea>
+        <div style="display:flex;gap:6px;">
+          <select id="fontStyle" style="flex:1;">
+            <option value="block">█ 方塊體</option>
+            <option value="shadow">▓ 陰影體</option>
+            <option value="outline">□ 空心體</option>
+            <option value="slim">| 細線體</option>
+          </select>
+          <button class="btn btn-secondary" style="width:auto;padding:8px 14px;font-size:13px;" onclick="renderText()">產生</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 產生按鈕 -->
+    <button class="btn btn-primary" id="generateBtn" onclick="generateASCII()" disabled>
+      ⚡ 產生 ASCII 藝術
+    </button>
+  </div>
+
+  <!-- ── 右側輸出 ── -->
+  <div class="output-area">
+    <div class="output-toolbar">
+      <span class="output-toolbar-title" id="outputInfo">尚未產生</span>
+      <button class="btn-sm btn-invert" id="invertBtn" onclick="toggleInvert()">反轉</button>
+      <button class="btn-sm btn-copy" id="copyBtn" onclick="copyASCII()">📋 複製</button>
+      <button class="btn-sm btn-dl" onclick="downloadTXT()">⬇️ 下載 .txt</button>
+      <button class="btn-sm btn-dl" style="background:rgba(88,166,255,0.1);color:var(--accent);border-color:rgba(88,166,255,0.3);" onclick="downloadPNG()">🖼️ 存成圖片</button>
+    </div>
+    <div class="output-wrap" id="outputWrap">
+      <div class="placeholder-msg" id="placeholderMsg">
+        <div class="big">⬛</div>
+        <p>上傳圖片並調整設定<br>點擊「產生 ASCII 藝術」開始轉換</p>
+      </div>
+      <pre id="asciiOutput" class="color-white" style="display:none;font-size:7px;"></pre>
+    </div>
+  </div>
+</div>
+
+<canvas id="workCanvas" style="display:none;"></canvas>
+<div class="toast" id="toast"></div>
+
+<!-- 引入獨立的 JavaScript -->
+<script src="../js/tools/ASCII.js" defer></script>
+
+</body>
+</html>

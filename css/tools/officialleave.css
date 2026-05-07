@@ -1,0 +1,102 @@
+/* =========================================
+   差假證明專屬樣式 (Official Leave Styles)
+   ========================================= */
+.time-row { display: flex; gap: 8px; }
+.time-row .form-group { flex: 1; }
+
+.member-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.member-checkbox {
+  display: flex; align-items: center; gap: 8px;
+  background: #0f172a; border: 1px solid #334155;
+  border-radius: 6px; padding: 8px 10px;
+  cursor: pointer; transition: border-color 0.15s;
+  font-size: 14px; color: #e2e8f0;
+}
+.member-checkbox:hover { border-color: #3b82f6; }
+.member-checkbox input[type="checkbox"] { width: 16px; height: 16px; accent-color: #3b82f6; cursor: pointer; flex-shrink: 0; }
+
+.select-all-row { display: flex; gap: 8px; margin-bottom: 4px; }
+.btn-sm { padding: 5px 12px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-family: sans-serif; }
+.btn-select-all { background: #1d4ed8; color: white; }
+.btn-deselect { background: #475569; color: #e2e8f0; }
+
+.fixed-info {
+  background: #0f172a; border: 1px solid #1e40af; border-radius: 8px;
+  padding: 12px 14px; font-size: 13px; color: #93c5fd;
+  font-family: sans-serif; line-height: 1.8;
+}
+.fixed-info span { color: #fff; font-weight: bold; }
+
+.btn-generate { padding: 13px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: bold; font-family: sans-serif; transition: opacity 0.2s; letter-spacing: 1px; }
+.btn-generate:hover { opacity: 0.88; }
+.btn-individual { padding: 13px; background: linear-gradient(135deg, #0891b2, #0d9488); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: bold; font-family: sans-serif; transition: opacity 0.2s; letter-spacing: 1px; }
+.btn-individual:hover { opacity: 0.88; }
+
+/* --- 右側預覽區 --- */
+.preview-area {
+  flex: 1; background: #e5e7eb; padding: 30px;
+  overflow-y: auto; display: flex; flex-direction: column;
+  align-items: center; gap: 16px; min-width: 0;
+}
+.preview-toolbar {
+  display: none; gap: 12px; align-items: center; flex-wrap: wrap;
+  font-family: sans-serif; font-size: 14px; color: #374151;
+  width: 100%; max-width: 794px;
+}
+.btn-print { padding: 9px 22px; background: #059669; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-family: sans-serif; font-weight: bold; }
+.btn-print:hover { background: #047857; }
+
+/* --- 縮放控制 --- */
+.zoom-controls { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 10px; font-family: sans-serif; font-size: 13px; }
+.zoom-btn { width: 28px; height: 28px; border: none; background: #f3f4f6; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; color: #374151; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+.zoom-btn:hover { background: #e5e7eb; }
+.zoom-label { min-width: 44px; text-align: center; font-weight: bold; color: #1e293b; font-size: 14px; }
+
+/* --- A4 預覽 --- */
+.a4-wrapper { width: 794px; transform-origin: top center; transition: transform 0.2s; }
+.a4-page { width: 794px; background: white; padding: 60px 70px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border-radius: 4px; }
+.cert-title { text-align: center; font-size: 26px; font-weight: bold; letter-spacing: 6px; color: #1e3a5f; margin-bottom: 30px; padding-bottom: 14px; border-bottom: 2px solid #1e3a5f; }
+.cert-body { font-size: 17px; line-height: 2.6; color: #111; text-align: justify; }
+.cert-body .hl { font-weight: bold; text-decoration: underline; text-underline-offset: 3px; }
+.cert-meta { margin-top: 28px; display: flex; justify-content: space-between; font-size: 16px; color: #222; border-top: 1px dashed #aaa; padding-top: 16px; }
+.cert-sign { margin-top: 40px; text-align: right; font-size: 17px; color: #111; line-height: 2.2; }
+.cert-sign .dept { color: #1e3a5f; font-weight: bold; }
+
+/* --- 個人文字模式 --- */
+.individual-container { width: 100%; max-width: 794px; display: flex; flex-direction: column; gap: 12px; }
+.individual-card { background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+.individual-card-header { background: #1e3a5f; color: white; padding: 10px 16px; font-size: 15px; font-weight: bold; font-family: sans-serif; display: flex; justify-content: space-between; align-items: center; }
+.individual-card-body { padding: 16px; position: relative; }
+.individual-text { font-size: 15px; line-height: 2.2; color: #111; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px 16px; white-space: pre-wrap; word-break: break-all; font-family: '標楷體', 'DFKai-SB', serif; }
+.btn-copy { padding: 6px 14px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-family: sans-serif; font-weight: bold; transition: background 0.15s; white-space: nowrap; }
+.btn-copy:hover { background: #2563eb; }
+.btn-copy.copied { background: #059669; }
+.btn-copy-all { padding: 9px 22px; background: #0891b2; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-family: sans-serif; font-weight: bold; transition: background 0.15s; }
+.btn-copy-all:hover { background: #0e7490; }
+.btn-copy-all.copied { background: #059669; }
+
+/* --- 模式切換標籤 --- */
+.mode-tabs { display: none; gap: 0; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden; font-family: sans-serif; }
+.mode-tab { padding: 8px 16px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: bold; color: #6b7280; transition: all 0.15s; }
+.mode-tab.active { background: #1e293b; color: white; }
+.placeholder { color: #9ca3af; text-align: center; font-size: 16px; font-family: sans-serif; margin-top: 80px; line-height: 2; }
+
+/* --- RWD 修正 --- */
+@media (max-width: 900px) {
+  .preview-area { padding: 70px 12px 24px; align-items: center; }
+  .preview-toolbar { max-width: 100%; justify-content: center; }
+  .a4-wrapper { width: 100%; }
+}
+@media (max-width: 480px) { .preview-area { padding: 70px 8px 20px; } }
+
+/* --- 列印設定 --- */
+@media print {
+  body { background: white; }
+  .panel, .preview-toolbar, .mobile-header, .overlay { display: none !important; }
+  .preview-area { background: white; padding: 0; }
+  .a4-wrapper { transform: none !important; width: 100% !important; }
+  .a4-page { box-shadow: none; width: 100%; padding: 20mm 25mm; }
+  .individual-container { max-width: 100%; }
+  .individual-card { box-shadow: none; break-inside: avoid; }
+  .btn-copy, .btn-copy-all { display: none !important; }
+}

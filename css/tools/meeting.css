@@ -1,0 +1,115 @@
+/* =========================================
+   會議記錄產生器專屬樣式 (Meeting Styles)
+   ========================================= */
+/* 覆寫 layout.css 的面板寬度，讓表單更好看 */
+.panel { width: 400px; min-width: 340px; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* --- 出席人員區塊 --- */
+.attendee-list { display: flex; flex-direction: column; gap: 6px; }
+.attendee-item { display: flex; gap: 6px; align-items: center; }
+.attendee-item input { flex: 1; }
+.attendee-item select { width: 100px; flex-shrink: 0; }
+.btn-icon { width: 30px; height: 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
+.btn-del-row { background: #7f1d1d; color: white; }
+.btn-del-row:hover { background: #991b1b; }
+
+/* --- 議題列表區塊 --- */
+.agenda-list { display: flex; flex-direction: column; gap: 10px; }
+.agenda-item { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.agenda-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.agenda-num { background: #1d4ed8; color: white; font-size: 12px; font-weight: bold; padding: 3px 9px; border-radius: 20px; flex-shrink: 0; }
+.agenda-item input, .agenda-item textarea, .agenda-item select { padding: 8px 10px; border-radius: 6px; border: 1px solid #1e3a5f; background: #0a0f1e; color: #e2e8f0; font-size: 13px; font-family: sans-serif; width: 100%; }
+.agenda-item textarea { resize: vertical; min-height: 55px; }
+.agenda-item label { font-size: 12px; color: #64748b; }
+
+.btn-add-agenda { padding: 9px; background: #0f172a; border: 1px dashed #334155; border-radius: 8px; color: #64748b; cursor: pointer; font-size: 13px; transition: all 0.15s; text-align: center; }
+.btn-add-agenda:hover { border-color: #3b82f6; color: #93c5fd; }
+.btn-generate { padding: 14px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: bold; letter-spacing: 1px; transition: opacity 0.2s; box-shadow: 0 4px 16px rgba(37,99,235,0.3); }
+.btn-generate:hover { opacity: 0.88; }
+
+/* --- 右側預覽區與工具列 --- */
+.preview-area { flex: 1; background: #e2e8f0; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.preview-toolbar { display: none; gap: 12px; align-items: center; flex-wrap: wrap; width: 100%; max-width: 794px; }
+.btn-print { padding: 9px 22px; background: #059669; color: white; border: none; border-radius: 7px; cursor: pointer; font-size: 14px; font-weight: bold; }
+.btn-print:hover { background: #047857; }
+.btn-copy-text { padding: 9px 22px; background: #7c3aed; color: white; border: none; border-radius: 7px; cursor: pointer; font-size: 14px; font-weight: bold; transition: background 0.15s; }
+.btn-copy-text:hover { background: #6d28d9; }
+.btn-copy-text.copied { background: #059669; }
+
+.zoom-controls { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 10px; font-size: 13px; }
+.zoom-btn { width: 28px; height: 28px; border: none; background: #f3f4f6; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; color: #374151; display: flex; align-items: center; justify-content: center; }
+.zoom-btn:hover { background: #e5e7eb; }
+.zoom-label { min-width: 44px; text-align: center; font-weight: bold; color: #1e293b; }
+
+/* --- A4 紙張預覽 --- */
+.a4-wrapper { width: 794px; transform-origin: top center; transition: transform 0.2s; }
+.a4-page { width: 794px; min-height: 1123px; background: white; padding: 55px 65px; box-shadow: 0 4px 24px rgba(0,0,0,0.15); border-radius: 4px; font-family: '標楷體', 'DFKai-SB', serif; color: #111; }
+
+/* --- 文件排版 --- */
+.doc-header { text-align: center; margin-bottom: 28px; }
+.doc-org { font-size: 15px; color: #1e3a5f; letter-spacing: 3px; margin-bottom: 4px; }
+.doc-title { font-size: 26px; font-weight: bold; letter-spacing: 8px; color: #0f172a; margin-bottom: 6px; }
+.doc-subtitle { font-size: 14px; color: #475569; letter-spacing: 2px; }
+.doc-divider { border: none; border-top: 3px double #1e3a5f; margin: 16px 0; }
+.doc-divider-thin { border: none; border-top: 1px solid #cbd5e1; margin: 14px 0; }
+
+.info-table { width: 100%; border-collapse: collapse; font-size: 15px; margin-bottom: 20px; }
+.info-table td { padding: 7px 10px; border: 1px solid #cbd5e1; vertical-align: top; line-height: 1.8; }
+.info-table td:first-child { background: #f1f5f9; font-weight: bold; color: #1e3a5f; white-space: nowrap; width: 90px; text-align: center; }
+
+/* --- 出席人員排版 --- */
+.attendee-section { margin-bottom: 20px; }
+.attendee-section-title { font-size: 15px; font-weight: bold; color: #1e3a5f; background: #eff6ff; padding: 6px 12px; border-left: 4px solid #2563eb; margin-bottom: 8px; }
+.role-group { margin-bottom: 10px; }
+.role-group-label { font-size: 12px; font-weight: bold; color: #2563eb; letter-spacing: 1px; margin-bottom: 4px; padding: 2px 8px; background: #eff6ff; border-radius: 4px; display: inline-block; }
+.attendee-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px 6px; font-size: 14px; padding: 0 4px; }
+.attendee-cell { padding: 4px 6px; border-bottom: 1px dotted #e2e8f0; text-align: center; }
+
+/* --- 議題排版 --- */
+.agenda-section { margin-bottom: 24px; }
+.agenda-section-title { font-size: 16px; font-weight: bold; color: #fff; background: #1e3a5f; padding: 8px 14px; margin-bottom: 0; letter-spacing: 2px; }
+.agenda-block { border: 1px solid #cbd5e1; border-top: none; margin-bottom: 12px; }
+.agenda-block-header { background: #f8fafc; padding: 10px 14px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: baseline; gap: 10px; }
+.agenda-block-num { background: #2563eb; color: white; font-size: 13px; font-weight: bold; padding: 2px 10px; border-radius: 20px; flex-shrink: 0; }
+.agenda-block-title { font-size: 15px; font-weight: bold; color: #0f172a; flex: 1; }
+.agenda-block-type { font-size: 12px; color: #64748b; background: #e2e8f0; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; }
+.agenda-block-body { padding: 12px 16px; font-size: 14px; line-height: 2; }
+.agenda-block-body .field-label { font-size: 13px; font-weight: bold; color: #1e3a5f; margin-bottom: 3px; margin-top: 8px; }
+.agenda-block-body .field-label:first-child { margin-top: 0; }
+.agenda-block-body .field-content { color: #1e293b; padding-left: 12px; border-left: 3px solid #e2e8f0; white-space: pre-wrap; }
+.resolution-box { background: #fefce8; border: 1px solid #fde047; border-radius: 6px; padding: 10px 14px; margin-top: 8px; font-size: 14px; color: #713f12; line-height: 1.9; white-space: pre-wrap; }
+.resolution-box::before { content: '📌 決議：'; font-weight: bold; display: block; margin-bottom: 2px; color: #92400e; }
+
+/* --- 其他排版 --- */
+.misc-section { border: 1px solid #cbd5e1; border-top: none; padding: 12px 16px; font-size: 14px; line-height: 2; color: #475569; white-space: pre-wrap; }
+.sign-section { margin-top: 40px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: center; font-size: 14px; }
+.sign-box { border-top: 1px solid #94a3b8; padding-top: 8px; color: #374151; }
+.sign-box .sign-title { font-weight: bold; color: #1e3a5f; margin-bottom: 30px; }
+.sign-box .sign-name { color: #64748b; font-size: 13px; }
+.doc-footer { margin-top: 30px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px dashed #e2e8f0; padding-top: 12px; }
+.placeholder { color: #94a3b8; text-align: center; font-size: 16px; margin-top: 80px; line-height: 2.2; font-family: sans-serif; }
+
+/* --- 身份標籤顏色 --- */
+.tag-研究生 { background: #dbeafe; color: #1e40af; }
+.tag-專題生 { background: #dcfce7; color: #166534; }
+.tag-博士生 { background: #f3e8ff; color: #6b21a8; }
+.tag-教授   { background: #fef3c7; color: #92400e; }
+.tag-助理教授 { background: #fef3c7; color: #92400e; }
+.tag-助理   { background: #f1f5f9; color: #475569; }
+.tag-訪問學者 { background: #fce7f3; color: #9d174d; }
+.tag-其他   { background: #f1f5f9; color: #475569; }
+
+/* --- RWD 與列印 --- */
+@media (max-width: 900px) {
+  .preview-area { padding: 70px 12px 24px; }
+  .a4-wrapper { width: 100%; }
+}
+@media print {
+  body { background: white; }
+  .panel, .preview-toolbar, .mobile-header, .overlay { display: none !important; }
+  .preview-area { background: white; padding: 0; }
+  .a4-wrapper { transform: none !important; width: 100% !important; }
+  .a4-page { box-shadow: none; width: 100%; min-height: unset; padding: 15mm 20mm; }
+}

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>出勤紀錄系統</title>
+  
+  <!-- 引入共用與專屬 CSS -->
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/tools/come.css">
+</head>
+<body>
+
+<!-- 頂部導覽 -->
+<div class="topbar">
+  <div class="topbar-brand">📋 <span>出勤</span>紀錄系統</div>
+  <button class="tab-btn active" onclick="switchTab('checkin', event)">✅ 簽到</button>
+  <button class="tab-btn" onclick="switchTab('stats', event)">📊 統計</button>
+  <button class="tab-btn" onclick="switchTab('history', event)">📅 歷史</button>
+  <button class="tab-btn" onclick="switchTab('members', event)">👥 成員</button>
+  <div class="topbar-right">
+    <span class="clock" id="clock">--:--:--</span>
+  </div>
+</div>
+
+<!-- ══ 簽到頁 ══ -->
+<div class="page active" id="page-checkin">
+  <div class="card">
+    <div class="card-title">📅 本次會議資訊</div>
+    <div class="date-row">
+      <input type="date" id="todayDate">
+      <input type="text" id="meetingLabel" placeholder="會議名稱（如：研究室週會）" style="min-width:200px;">
+      <button class="btn-primary" onclick="newSession()">🔄 新建簽到</button>
+      <button class="btn-primary btn-success" onclick="saveSession()">💾 儲存紀錄</button>
+    </div>
+  </div>
+
+  <!-- 統計卡 -->
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-num c-blue" id="s-total">0</div><div class="stat-label">總人數</div></div>
+    <div class="stat-card"><div class="stat-num c-green" id="s-present">0</div><div class="stat-label">出席</div></div>
+    <div class="stat-card"><div class="stat-num c-red" id="s-absent">0</div><div class="stat-label">缺席</div></div>
+    <div class="stat-card"><div class="stat-num c-yellow" id="s-late">0</div><div class="stat-label">遲到</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🖱️ 點擊成員卡片切換狀態</div>
+    <div class="status-btns">
+      <span style="font-size:12px;color:var(--text2);">快速操作：</span>
+      <button class="sbtn sbtn-all-present" onclick="setAll('present')">✅ 全部出席</button>
+      <button class="sbtn sbtn-reset" onclick="setAll('none')">↺ 全部重置</button>
+      <span style="font-size:12px;color:var(--text2);margin-left:8px;">點擊順序：</span>
+      <span style="font-size:12px;color:var(--green);">⬜未簽 → ✅出席 → ⏰遲到 → ❌缺席 → ⬜未簽</span>
+    </div>
+    <div class="checkin-grid" id="checkinGrid"></div>
+  </div>
+</div>
+
+<!-- ══ 統計頁 ══ -->
+<div class="page" id="page-stats">
+  <div class="stat-grid" id="statsCards">
+    <div class="stat-card"><div class="stat-num c-blue" id="st-sessions">0</div><div class="stat-label">總場次</div></div>
+    <div class="stat-card"><div class="stat-num c-green" id="st-avgRate">0%</div><div class="stat-label">平均出席率</div></div>
+    <div class="stat-card"><div class="stat-num c-yellow" id="st-members">0</div><div class="stat-label">成員人數</div></div>
+    <div class="stat-card"><div class="stat-num c-red" id="st-lowCount">0</div><div class="stat-label">出席率 &lt;70%</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 各場次出席率</div>
+    <div class="week-chart" id="sessionChart"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">👤 個人出勤統計</div>
+    <div class="table-wrap">
+      <table id="statsTable">
+        <thead>
+          <tr>
+            <th style="text-align:left;">姓名</th>
+            <th>身份</th>
+            <th>出席</th>
+            <th>遲到</th>
+            <th>缺席</th>
+            <th>未記錄</th>
+            <th>出席率</th>
+          </tr>
+        </thead>
+        <tbody id="statsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 歷史頁 ══ -->
+<div class="page" id="page-history">
+  <div class="card">
+    <div class="card-title">📅 歷史出勤紀錄</div>
+    <div id="historyList"><div class="empty">尚無歷史紀錄</div></div>
+  </div>
+  <div class="card" id="historyDetail" style="display:none;">
+    <div class="card-title" id="historyDetailTitle">詳細紀錄</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="text-align:left;">姓名</th><th>身份</th><th>狀態</th><th>時間</th></tr></thead>
+        <tbody id="historyDetailBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 成員管理頁 ══ -->
+<div class="page" id="page-members">
+  <div class="card">
+    <div class="card-title">➕ 新增成員</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <input type="text" id="newName" placeholder="姓名" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;flex:1;min-width:120px;">
+      <select id="newRole" style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;">
+        <option>研究生</option><option>專題生</option><option>博士生</option>
+        <option>教授</option><option>助理</option><option>其他</option>
+      </select>
+      <button class="btn-primary" onclick="addMember()">＋ 新增</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">👥 成員列表（<span id="memberCount">0</span> 人）</div>
+    <div id="memberList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 引入獨立的 JavaScript -->
+<script src="../js/tools/come.js" defer></script>
+
+</body>
+</html>

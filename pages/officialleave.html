@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>差假證明產生器</title>
+  
+  <!-- 引入共用與專屬 CSS -->
+  <link rel="stylesheet" href="../css/global.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/tools/officialleave.css">
+</head>
+<body>
+
+<!-- 手機頂部 Header (來自 layout.css) -->
+<div class="mobile-header" id="mobileHeader">
+  <span>📋 差假證明產生器</span>
+  <button class="hamburger" onclick="togglePanel()" aria-label="開啟設定">
+    <span></span><span></span><span></span>
+  </button>
+</div>
+
+<div class="overlay" id="overlay" onclick="togglePanel()"></div>
+
+<!-- 左側面板 (來自 layout.css) -->
+<div class="panel" id="panel">
+  <h1>📋 差假證明產生器</h1>
+
+  <div>
+    <div class="section-title">固定資訊</div>
+    <div class="fixed-info">
+      系所：<span>電機系</span><br>
+      職稱：<span>助理教授</span><br>
+      簽署人：<span>陳靜茹</span>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-title">計畫資訊</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="form-group">
+        <label>計畫編號</label>
+        <input type="text" id="projectNo" value="114-851" placeholder="例：114-851">
+      </div>
+      <div class="form-group">
+        <label>出差地點</label>
+        <input type="text" id="location" value="嘉義縣" placeholder="例：嘉義縣">
+      </div>
+      <div class="form-group">
+        <label>任務說明</label>
+        <input type="text" id="task" value="現地勘查" placeholder="例：現地勘查、協助感測器安裝">
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-title">日期 &amp; 時間</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="form-group">
+        <label>出差日期</label>
+        <input type="date" id="tripDate" value="2026-03-24">
+      </div>
+      <div class="time-row">
+        <div class="form-group">
+          <label>開始時間</label>
+          <input type="time" id="timeStart" value="08:00">
+        </div>
+        <div class="form-group">
+          <label>結束時間</label>
+          <input type="time" id="timeEnd" value="18:00">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-title">出差人員</div>
+    <div class="select-all-row">
+      <button class="btn-sm btn-select-all" onclick="selectAll(true)">全選</button>
+      <button class="btn-sm btn-deselect" onclick="selectAll(false)">全不選</button>
+    </div>
+    <div class="member-grid" id="memberGrid"></div>
+  </div>
+
+  <button class="btn-generate" onclick="generate()">🖨️ 產生差假證明</button>
+  <button class="btn-individual" onclick="generateIndividual()">📝 產生個人出差文字</button>
+</div>
+
+<!-- 右側預覽區 (來自 officialleave.css) -->
+<div class="preview-area">
+  <div class="preview-toolbar" id="toolbar">
+    <div class="mode-tabs" id="modeTabs">
+      <button class="mode-tab" id="tabCert" onclick="switchMode('cert')">📄 證明書</button>
+      <button class="mode-tab" id="tabIndividual" onclick="switchMode('individual')">📝 個人文字</button>
+    </div>
+    <button class="btn-print" id="btnPrint" onclick="window.print()">🖨️ 列印 / 存成 PDF</button>
+    <button class="btn-copy-all" id="btnCopyAll" onclick="copyAll()" style="display:none;">📋 複製全部文字</button>
+    
+    <div class="zoom-controls" id="zoomControls">
+      <button class="zoom-btn" onclick="changeZoom(-10)">−</button>
+      <span class="zoom-label" id="zoomLabel">100%</span>
+      <button class="zoom-btn" onclick="changeZoom(10)">＋</button>
+      <button class="zoom-btn" onclick="resetZoom()" title="重設縮放" style="font-size:13px;">↺</button>
+    </div>
+  </div>
+
+  <div class="a4-wrapper" id="a4Wrapper">
+    <div id="previewContent">
+      <div class="placeholder">⬅️ 填寫左側資訊後<br>點擊下方按鈕產生內容</div>
+    </div>
+  </div>
+</div>
+
+<!-- 引入獨立的 JavaScript -->
+<script src="../js/tools/officialleave.js" defer></script>
+
+</body>
+</html>

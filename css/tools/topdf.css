@@ -1,0 +1,71 @@
+/* =========================================
+   Joanoo Convert 專屬樣式 (PDF Tool Styles)
+   ========================================= */
+body {
+  background:
+    radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.18), transparent 22%),
+    radial-gradient(circle at 85% 80%, rgba(168, 85, 247, 0.12), transparent 20%),
+    radial-gradient(circle at 10% 85%, rgba(59, 130, 246, 0.12), transparent 18%),
+    #050505;
+  overflow-x: hidden;
+}
+
+.glow-line {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgba(166, 187, 255, 0.7), transparent);
+  height: 1px;
+  opacity: 0.5;
+}
+
+.title-gradient {
+  background: linear-gradient(180deg, #f7f8ff 10%, #dbe4ff 40%, #7f8dff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.tool-chip {
+  background: rgba(12, 12, 18, 0.72);
+  border: 1px solid rgba(78, 95, 200, 0.4);
+  color: rgba(226, 232, 255, 0.85);
+  transition: all 0.2s ease;
+}
+
+.tool-chip:hover {
+  border-color: rgba(140, 155, 255, 0.7);
+  box-shadow: 0 0 24px rgba(99, 102, 241, 0.16);
+}
+
+.tool-chip.active {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.9);
+  color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.08) inset;
+}
+
+.panel {
+  background: linear-gradient(180deg, rgba(14,14,22,0.8), rgba(7,7,12,0.94));
+  border: 1px solid rgba(103, 117, 255, 0.16);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.42);
+  backdrop-filter: blur(10px);
+}
+
+.dropzone {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(135, 149, 255, 0.28);
+}
+
+.field {
+  background: rgba(10, 10, 15, 0.75);
+  border: 1px solid rgba(114, 126, 255, 0.18);
+  color: #e5e7eb;
+}
+
+.field:focus {
+  outline: none;
+  border-color: rgba(140, 155, 255, 0.5);
+}
+
+.hidden {
+  display: none;
+}
