@@ -115,11 +115,31 @@
       <label class="lbl">教室名稱</label>
       <input type="text" id="newClsName" placeholder="例如：EB107">
     </div>
+
     <div class="form-group">
+      <label class="lbl">配置方式</label>
+      <div class="btn-row">
+        <button type="button" class="btn btn-sm btn-primary" id="clsModeBlockBtn" onclick="setClsInputMode('block')">🧩 區塊配置（原本方式）</button>
+        <button type="button" class="btn btn-sm btn-outline" id="clsModeGridBtn" onclick="setClsInputMode('grid')">🔢 幾排 x 幾列（自訂矩陣）</button>
+      </div>
+    </div>
+
+    <!-- 原本的區塊配置輸入（完全保留） -->
+    <div class="form-group" id="blockModeGroup">
       <label class="lbl">座位配置（每行一排，數字為各區塊座位數，逗號分隔）</label>
       <textarea id="newClsLayout" placeholder="2,2,2,0&#10;3,3,3,3" style="min-height:90px"></textarea>
       <div style="font-size:.72rem;color:#888;margin-top:3px">0 = 該排該區塊無座位</div>
     </div>
+
+    <!-- 新增：自訂矩陣（幾排 x 幾列）輸入 -->
+    <div class="form-group" id="gridModeGroup" style="display:none">
+      <label class="lbl">排數（面向黑板的前後方向，共幾排）</label>
+      <input type="number" id="newClsRows" min="1" max="30" placeholder="例如：6">
+      <label class="lbl" style="margin-top:8px">每排座位數（左右方向，一排幾個座位）</label>
+      <input type="number" id="newClsCols" min="1" max="30" placeholder="例如：8">
+      <div style="font-size:.72rem;color:#888;margin-top:3px">將自動建立「排數 × 每排座位數」的矩形座位陣列，黑板固定顯示在最前方，可直接套用排列方式與梅花座功能</div>
+    </div>
+
     <div class="modal-footer">
       <button class="btn btn-gray" onclick="closeModal('addClsModal')">取消</button>
       <button class="btn btn-primary" onclick="addCls()">新增</button>

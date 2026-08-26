@@ -41,7 +41,7 @@ html, body { height: 100%; font-family: 'Segoe UI', Arial, sans-serif; backgroun
 .btn-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 
 label.lbl { font-size: .8rem; font-weight: 600; color: #555; display: block; margin-bottom: 4px; }
-input[type=text], select, textarea { width: 100%; padding: 7px 10px; border: 1.5px solid #dde3ea; border-radius: 6px; font-size: .83rem; background: #fafbfc; transition: border .2s; }
+input[type=text], input[type=number], select, textarea { width: 100%; padding: 7px 10px; border: 1.5px solid #dde3ea; border-radius: 6px; font-size: .83rem; background: #fafbfc; transition: border .2s; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: #2c7a7b; background: #fff; }
 textarea { resize: vertical; min-height: 80px; font-family: monospace; }
 
@@ -144,6 +144,10 @@ input:checked + .toggle-slider:before { transform: translateX(18px); }
 .el104-col { display: flex; flex-direction: column; gap: var(--seat-gap); align-items: center; }
 .el104-col-lbl { font-size: .7rem; font-weight: 700; color: #888; margin-bottom: 2px; text-align: center; }
 .desk { display: flex; gap: var(--seat-gap); }
+
+/* 🌟 新增：自訂矩陣教室（幾排 x 幾列） */
+.customgrid { display: flex; flex-direction: column; gap: var(--seat-gap); align-items: center; }
+.customgrid-row { display: flex; gap: var(--seat-gap); justify-content: center; }
 
 .no-result { text-align: center; padding: 40px 20px; color: #aaa; font-size: .9rem; }
 .no-result .icon { font-size: 3rem; margin-bottom: 8px; }

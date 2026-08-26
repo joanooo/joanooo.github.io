@@ -111,6 +111,7 @@ let seatMap={};
 let editSeatKey=null,editSeatCls=null;
 let currentMode='order';
 let quincunxOn=false;
+let clsInputMode='block'; // 🌟 新增：新增教室視窗目前使用的輸入模式（block=區塊配置 / grid=幾排x幾列）
 
 function init(){ renderClsList(); }
 function allClassrooms(){ return [...CLASSROOMS,...customCls]; }
@@ -120,6 +121,7 @@ function getCapacity(cls){
   if(cls.type==='grid'){ let c=0; cls.cols.forEach(col=>{ const rows=col.endRow-col.startRow+1; c+=col.type==='single'?rows:rows*2; }); return c; }
   if(cls.type==='el308') return cls.cols.reduce((s,c)=>s+c.rows,0);
   if(cls.type==='el310'){ let c=0; cls.segments.forEach(seg=>{ if(seg.type==='aisle'||seg.type==='teacher') return; c+=seg.rows; }); return c; }
+  if(cls.type==='customgrid') return cls.rows*cls.cols; // 🌟 新增：自訂矩陣教室容量
   return 0;
 }
 
@@ -212,6 +214,13 @@ function buildSeatGrid(cls){
       for(let r=0;r<seg.rows;r++) seats.push({key:`${si}-${r}`,gridRow:start+r,gridCol:colIdx});
       colIdx+=2;
     });
+  } else if(cls.type==='customgrid'){
+    // 🌟 新增：自訂矩陣教室（rows 排 x cols 列），黑板固定在最前方（第1排）
+    for(let r=1;r<=cls.rows;r++){
+      for(let c=1;c<=cls.cols;c++){
+        seats.push({key:`${r}-${c}`, gridRow:r, gridCol:c});
+      }
+    }
   }
   return seats;
 }
@@ -240,7 +249,7 @@ function applyQuincunx(cls, seats){
       }
     }
   } else {
-    // 其他方形教室維持原本的「上下左右防碰撞」邏輯
+    // 其他方形教室（含新增的自訂矩陣）維持原本的「上下左右防碰撞」邏輯
     const occupied = new Set();
     for(const s of seats){
       const neighbors = [`${s.gridRow-1},${s.gridCol}`, `${s.gridRow+1},${s.gridCol}`, `${s.gridRow},${s.gridCol-1}`, `${s.gridRow},${s.gridCol+1}`];
@@ -301,15 +310,33 @@ function renderAllClassrooms(){
     html+=`<div class="stage" style="width: 100%; box-sizing: border-box;">▼ 白板 / 講台 ▼</div>`;
     
     html+=`<div class="cls-center" style="display: flex; justify-content: center; width: 100%;">`;
-    if(cls.type==='fan')        html+=renderFan(cls,clsId);
-    else if(cls.type==='grid')  html+=renderGrid(cls,clsId);
-    else if(cls.type==='el308') html+=renderEL308(cls,clsId);
-    else if(cls.type==='el310') html+=renderEL310(cls,clsId);
+    if(cls.type==='fan')             html+=renderFan(cls,clsId);
+    else if(cls.type==='grid')       html+=renderGrid(cls,clsId);
+    else if(cls.type==='el308')      html+=renderEL308(cls,clsId);
+    else if(cls.type==='el310')      html+=renderEL310(cls,clsId);
+    else if(cls.type==='customgrid') html+=renderCustomGrid(cls,clsId); // 🌟 新增：自訂矩陣渲染
     html+=`</div>`;
     
     html+=`</div></div>`;
   }
   document.getElementById('clsViews').innerHTML=html||'<div class="no-result"><div class="icon">🏫</div>尚未排列</div>';
+}
+
+// ── 🌟 新增：自訂矩陣教室（幾排 x 幾列），黑板固定顯示在最前方（沿用共用 .stage） ──
+function renderCustomGrid(cls, clsId){
+  const hasAssigned=Object.keys(seatMap[clsId]||{}).length>0;
+  let html=`<div class="customgrid">`;
+  let seq=0;
+  for(let r=1;r<=cls.rows;r++){
+    html+=`<div class="customgrid-row">`;
+    for(let c=1;c<=cls.cols;c++){
+      seq++;
+      html+=renderSeatHtml(`${r}-${c}`, seq, c, clsId, hasAssigned);
+    }
+    html+='</div>';
+  }
+  html+='</div>';
+  return html;
 }
 
 // ── EL310 ──
@@ -437,7 +464,7 @@ function renderFan(cls, clsId){
       html += '</div>'; 
     }); 
     html += '</div>'; 
-  });
+  }); 
   html += '</div>'; 
   return html;
 }
@@ -526,10 +553,44 @@ function saveSeat(){
   closeModal('seatModal');renderAllClassrooms();renderList();
 }
 
-function openAddCls(){openModal('addClsModal');}
+// 🌟 新增：切換「新增教室」視窗的輸入模式（區塊配置 / 幾排x幾列）
+function setClsInputMode(mode){
+  clsInputMode = mode;
+  document.getElementById('blockModeGroup').style.display = mode==='block' ? 'block' : 'none';
+  document.getElementById('gridModeGroup').style.display  = mode==='grid'  ? 'block' : 'none';
+  document.getElementById('clsModeBlockBtn').className = 'btn btn-sm ' + (mode==='block' ? 'btn-primary' : 'btn-outline');
+  document.getElementById('clsModeGridBtn').className  = 'btn btn-sm ' + (mode==='grid'  ? 'btn-primary' : 'btn-outline');
+}
+
+function openAddCls(){
+  setClsInputMode('block'); // 每次打開都重設為原本的區塊配置模式
+  document.getElementById('newClsRows').value='';
+  document.getElementById('newClsCols').value='';
+  openModal('addClsModal');
+}
+
 function addCls(){
-  const name=document.getElementById('newClsName').value.trim(); const raw=document.getElementById('newClsLayout').value.trim();
-  if(!name||!raw){showAlert('請填寫教室名稱與配置','warning');return;}
+  const name=document.getElementById('newClsName').value.trim();
+  if(!name){showAlert('請填寫教室名稱','warning');return;}
+
+  // 🌟 新增：幾排 x 幾列 自訂矩陣模式
+  if(clsInputMode==='grid'){
+    const rows=parseInt(document.getElementById('newClsRows').value)||0;
+    const cols=parseInt(document.getElementById('newClsCols').value)||0;
+    if(rows<1||cols<1){showAlert('請輸入有效的排數與每排座位數','warning');return;}
+    customCls.push({id:name,name,type:'customgrid',rows,cols});
+    closeModal('addClsModal');
+    document.getElementById('newClsName').value='';
+    document.getElementById('newClsRows').value='';
+    document.getElementById('newClsCols').value='';
+    renderClsList();
+    showAlert(`✅ 已新增教室 ${name}（${rows}排 x ${cols}列，共${rows*cols}座）`,'success');
+    return;
+  }
+
+  // 原本的區塊配置模式（完全不變）
+  const raw=document.getElementById('newClsLayout').value.trim();
+  if(!raw){showAlert('請填寫座位配置','warning');return;}
   const layout=raw.split('\n').map((l,i)=>({row:i+1,blocks:l.split(',').map(n=>parseInt(n)||0)}));
   const maxSec=Math.max(...layout.map(r=>r.blocks.length));
   const sections=Array.from({length:maxSec},(_,i)=>['左區','中左區','中右區','右區'][i]||`區${i+1}`);
