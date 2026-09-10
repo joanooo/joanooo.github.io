@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="night-sky">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>綠色導航系統｜台南路徑雛形（Mapbox + Supabase）</title>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css" rel="stylesheet" />
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  [data-theme="night-sky"]{
+    --bg-0:#0A0C16; --bg-1:#12152A;
+    --panel:rgba(19,22,40,0.82); --panel-solid:#13162A;
+    --border:rgba(255,255,255,0.08);
+    --text:#E7E9F5; --muted:#8890AC; --label:#6E76A0;
+    --star-dim:#7C89B8; --star-dim-2:#5B6690;
+    --accent-a:#E8B86D; --accent-b:#5EEAD4;
+    --nebula-1:rgba(120,90,190,0.16); --nebula-2:rgba(40,110,140,0.14);
+  }
+  *{box-sizing:border-box;}
+  html, body{ height:100%; }
+  body{
+    margin:0; font-family:"Noto Sans TC", "Segoe UI", sans-serif;
+    background:var(--bg-0); color:var(--text); position:relative; overflow:hidden;
+  }
+
+  .space-bg{ position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 15%, var(--nebula-1), transparent 60%),
+      radial-gradient(ellipse 50% 35% at 85% 70%, var(--nebula-2), transparent 60%),
+      linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 100%);
+  }
+  .space-bg .stars, .space-bg .stars-2{
+    position:absolute; inset:0; background-repeat:repeat;
+    background-image:
+      radial-gradient(1.4px 1.4px at 10% 20%, rgba(255,255,255,0.9), transparent),
+      radial-gradient(1px 1px at 35% 65%, rgba(255,255,255,0.7), transparent),
+      radial-gradient(1.6px 1.6px at 60% 30%, rgba(255,255,255,0.8), transparent),
+      radial-gradient(1px 1px at 80% 80%, rgba(255,255,255,0.6), transparent),
+      radial-gradient(1.2px 1.2px at 92% 15%, rgba(255,255,255,0.75), transparent),
+      radial-gradient(1px 1px at 48% 90%, rgba(255,255,255,0.55), transparent),
+      radial-gradient(1.3px 1.3px at 25% 45%, rgba(255,255,255,0.65), transparent);
+    background-size:520px 520px; animation:twinkle 6s ease-in-out infinite alternate;
+  }
+  .space-bg .stars-2{ background-position:130px 260px; animation-duration:9s; opacity:0.6; }
+  @keyframes twinkle{ from{ opacity:0.55; } to{ opacity:1; } }
+  .space-bg .planet{
+    position:absolute; top:-60px; right:8%; width:180px; height:180px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, rgba(180,160,220,0.35), rgba(60,50,90,0.05) 70%);
+    filter:blur(1px);
+  }
+
+  header{
+    position:relative; overflow:hidden; z-index:30;
+    background:linear-gradient(180deg, rgba(8,9,18,0.9) 0%, rgba(18,21,42,0.85) 100%);
+    backdrop-filter:blur(6px); color:#fff; padding:12px 16px;
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--border);
+  }
+  header h1{ font-size:15px; margin:0; font-weight:600; letter-spacing:0.3px; color:var(--text); }
+  header span{ font-size:11px; color:var(--muted); }
+  .meteor-layer{ position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:1; }
+  .meteor{ position:absolute; top:-10px; left:0; width:2px; height:2px; border-radius:50%; background:#F3F4FA; opacity:0; animation:meteor-fall linear infinite; }
+  .meteor::before{ content:""; position:absolute; top:50%; right:0; width:90px; height:1px; transform:translateY(-50%); background:linear-gradient(90deg, rgba(243,244,250,0.85), rgba(243,244,250,0)); }
+  @keyframes meteor-fall{ 0%{transform:translate(0,0) rotate(215deg); opacity:0;} 5%{opacity:1;} 60%{opacity:1;} 100%{transform:translate(-420px,340px) rotate(215deg); opacity:0;} }
+
+  .layout{ position:relative; z-index:1; display:flex; height:calc(100vh - 49px); }
+  #map{ position:absolute; inset:0; background:var(--bg-0); }
+
+  /* -------------------- 桌面版側邊欄 -------------------- */
+  #sidebar{
+    width:340px; min-width:340px; background:var(--panel); backdrop-filter:blur(14px);
+    border-right:1px solid var(--border); padding:16px; overflow-y:auto; z-index:10;
+  }
+  .section-label{ font-size:11px; font-weight:700; color:var(--label); letter-spacing:1.5px; text-transform:uppercase; margin:16px 0 8px; }
+  .section-label:first-child{ margin-top:0; }
+
+  /* -------------------- 搜尋欄位 -------------------- */
+  .search-field{ position:relative; margin-bottom:8px; }
+  .search-field input{
+    width:100%; padding:10px 12px; border-radius:6px; border:1px solid var(--border);
+    font-size:13px; font-family:inherit; background:rgba(255,255,255,0.05); color:var(--text);
+  }
+  .search-field input::placeholder{ color:var(--muted); }
+  .suggestions{
+    position:absolute; top:calc(100% + 4px); left:0; right:0;
+    background:var(--panel-solid); border:1px solid var(--border); border-radius:8px;
+    max-height:220px; overflow-y:auto; z-index:50; display:none;
+  }
+  .suggestions.open{ display:block; }
+  .suggestion-item{ padding:9px 12px; font-size:12.5px; color:var(--text); cursor:pointer; border-bottom:1px solid var(--border); }
+  .suggestion-item:last-child{ border-bottom:none; }
+  .suggestion-item:hover, .suggestion-item.active{ background:rgba(255,255,255,0.06); }
+  .suggestion-item .sub{ display:block; font-size:11px; color:var(--muted); margin-top:2px; }
+
+  .chip-row{ display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 12px; }
+  .chip{
+    font-size:11px; padding:5px 9px; border-radius:999px; border:1px solid var(--border);
+    background:rgba(255,255,255,0.04); color:var(--muted); cursor:pointer;
+  }
+  .chip:hover{ color:var(--text); border-color:rgba(255,255,255,0.2); }
+
+  .layer-toggle{
+    display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text);
+    padding:6px 2px; cursor:pointer; user-select:none;
+  }
+  .layer-toggle input{ width:auto; margin:0; accent-color:var(--accent-a); }
+  .layer-toggle .swatch{ width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+
+  button.primary{
+    width:100%; background:var(--accent-a); color:#1A1406; border:none; font-weight:700;
+    cursor:pointer; padding:11px; border-radius:6px; font-size:13px; margin-top:4px;
+  }
+  button.primary:hover{ filter:brightness(1.08); }
+  button.primary:disabled{ background:rgba(255,255,255,0.08); color:var(--muted); }
+
+  .hint{ font-size:11.5px; color:var(--muted); line-height:1.6; margin:4px 0 0; }
+  .route-card{ border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:10px; background:rgba(255,255,255,0.03); }
+  .route-card .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; box-shadow:0 0 6px currentColor; }
+  .route-card h3{ font-size:13px; margin:0 0 6px; display:flex; align-items:center; color:var(--text); }
+  .route-card .stat{ font-size:12px; color:var(--muted); margin:2px 0; }
+  .route-card .stat b{ color:var(--text); }
+  #status{ font-size:12px; color:var(--muted); min-height:18px; margin-top:6px; }
+  #dataStatus{ font-size:11px; padding:6px 8px; border-radius:6px; margin-bottom:10px; background:rgba(255,255,255,0.04); color:var(--muted); border:1px solid var(--border); }
+  #dataStatus.live{ background:rgba(94,234,212,0.08); color:var(--accent-b); border-color:rgba(94,234,212,0.3); }
+
+  .legend{
+    position:absolute; bottom:16px; left:16px; background:var(--panel); backdrop-filter:blur(10px);
+    border:1px solid var(--border); border-radius:8px; padding:8px 12px;
+    font-size:11.5px; color:var(--muted); z-index:20; line-height:1.7;
+  }
+  .legend .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; box-shadow:0 0 6px currentColor; }
+  .mapboxgl-popup-content{ font-family:inherit; font-size:12.5px; padding:8px 12px; background:var(--panel-solid); color:var(--text); }
+  .mapboxgl-popup-tip{ border-top-color:var(--panel-solid) !important; border-bottom-color:var(--panel-solid) !important; }
+  .mapboxgl-ctrl-attrib{ background:rgba(10,12,22,0.7) !important; }
+  .mapboxgl-ctrl-attrib a{ color:var(--muted) !important; }
+  .mapboxgl-ctrl-bottom-left{ display:none; } /* 桌面版跟圖例位置打架，先藏起來，手機版會另外顯示歸屬資訊 */
+
+  /* -------------------- 手機／平板：搜尋框浮動＋底部抽屜 -------------------- */
+  #mobileSearchBar{ display:none; }
+  #sheetToggle{ display:none; }
+  #detailSheet{ display:none; }
+
+  @media (max-width: 860px){
+    #sidebar{ display:none; } /* 桌面版側邊欄在小螢幕直接不用，改用浮動搜尋條 + 底部抽屜 */
+
+    #mobileSearchBar{
+      display:block; position:absolute; top:12px; left:12px; right:12px; z-index:25;
+      background:var(--panel); backdrop-filter:blur(14px); border:1px solid var(--border);
+      border-radius:12px; padding:10px;
+    }
+    #mobileSearchBar .search-field{ margin-bottom:6px; }
+    #mobileSearchBar .search-field:last-of-type{ margin-bottom:8px; }
+
+    #sheetToggle{
+      display:flex; align-items:center; justify-content:center;
+      position:absolute; right:14px; bottom:14px; z-index:25;
+      width:48px; height:48px; border-radius:50%;
+      background:var(--accent-a); color:#1A1406; font-size:20px; border:none;
+      box-shadow:0 4px 14px rgba(0,0,0,0.4);
+    }
+
+    #detailSheet{
+      position:absolute; left:0; right:0; bottom:0; z-index:24;
+      background:var(--panel); backdrop-filter:blur(16px);
+      border-top:1px solid var(--border); border-radius:16px 16px 0 0;
+      padding:14px 16px 22px; max-height:60vh; overflow-y:auto;
+      transform:translateY(100%); transition:transform 0.25s ease;
+    }
+    #detailSheet.open{ display:block; transform:translateY(0); }
+    #detailSheet .sheet-handle{ width:36px; height:4px; border-radius:2px; background:var(--border); margin:0 auto 12px; }
+
+    .legend{ left:12px; bottom:76px; font-size:10.5px; padding:6px 10px; }
+
+    header{ padding:10px 14px; }
+    header span{ display:none; } /* 手機版空間有限，副標先隱藏，標題保持單行 */
+    header h1{ font-size:13.5px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="space-bg"><div class="stars"></div><div class="stars-2"></div><div class="planet"></div></div>
+
+<header>
+  <div class="meteor-layer" id="meteorLayer"></div>
+  <h1>綠色導航系統｜台南路徑雛形</h1>
+  <span>Mapbox + Supabase 版 · 夜空主題</span>
+</header>
+
+<div class="layout">
+
+  <!-- ============ 桌面版側邊欄 ============ -->
+  <div id="sidebar">
+    <div id="dataStatus">正在連線 Supabase…</div>
+
+    <div class="section-label">圖層</div>
+    <label class="layer-toggle">
+      <input type="checkbox" id="toggleCoolPoints" checked />
+      <span class="swatch" style="background:#7C89B8;"></span>節點（涼適點等）
+    </label>
+    <label class="layer-toggle">
+      <input type="checkbox" id="toggleSidewalks" />
+      <span class="swatch" style="background:#8890AC;"></span>人行道
+    </label>
+    <p class="hint" id="sidewalkHint"></p>
+
+    <div class="section-label">起訖點</div>
+    <div class="search-field">
+      <input type="text" id="startInput" placeholder="輸入起點地址或地標…" autocomplete="off" />
+      <div class="suggestions" id="startSuggestions"></div>
+    </div>
+    <div class="search-field">
+      <input type="text" id="endInput" placeholder="輸入終點地址或地標…" autocomplete="off" />
+      <div class="suggestions" id="endSuggestions"></div>
+    </div>
+    <div class="chip-row" id="chipRow"></div>
+    <button class="primary" id="planBtn">規劃並比較路線</button>
+    <div id="status"></div>
+    <p class="hint">路線由 OSRM 步行路網公開服務即時運算；覆蓋率為沿路線 150 公尺範圍內的節點數量。目前路線本身尚未依節點分布做加權，僅為事後量測，詳見旁白說明。</p>
+
+    <div class="section-label">路線比較</div>
+    <div id="results"><p class="hint">按下「規劃並比較路線」查看結果。</p></div>
+
+    <div class="section-label">關於此雛形</div>
+    <p class="hint">
+      節點資料從 Supabase 資料庫讀取（若尚未設定金鑰，會自動退回內建示範資料）。
+      搜尋功能使用 Mapbox Geocoding API，已限制在台南市範圍內優先顯示結果。
+    </p>
+  </div>
+
+  <!-- ============ 手機／平板：浮動搜尋條 ============ -->
+  <div id="mobileSearchBar">
+    <div class="search-field">
+      <input type="text" id="startInputMobile" placeholder="起點地址或地標…" autocomplete="off" />
+      <div class="suggestions" id="startSuggestionsMobile"></div>
+    </div>
+    <div class="search-field">
+      <input type="text" id="endInputMobile" placeholder="終點地址或地標…" autocomplete="off" />
+      <div class="suggestions" id="endSuggestionsMobile"></div>
+    </div>
+    <button class="primary" id="planBtnMobile">規劃並比較路線</button>
+  </div>
+
+  <!-- ============ 手機／平板：底部抽屜（結果／說明） ============ -->
+  <button id="sheetToggle" aria-label="展開詳細資訊">☰</button>
+  <div id="detailSheet">
+    <div class="sheet-handle"></div>
+    <div id="dataStatusMobile" class="hint"></div>
+
+    <div class="section-label">圖層</div>
+    <label class="layer-toggle">
+      <input type="checkbox" id="toggleCoolPointsMobile" checked />
+      <span class="swatch" style="background:#7C89B8;"></span>節點（涼適點等）
+    </label>
+    <label class="layer-toggle">
+      <input type="checkbox" id="toggleSidewalksMobile" />
+      <span class="swatch" style="background:#8890AC;"></span>人行道
+    </label>
+    <p class="hint" id="sidewalkHintMobile"></p>
+
+    <div class="section-label">路線比較</div>
+    <div id="resultsMobile"><p class="hint">按下「規劃並比較路線」查看結果。</p></div>
+    <div class="section-label">關於此雛形</div>
+    <p class="hint">節點資料從 Supabase 資料庫讀取；搜尋使用 Mapbox Geocoding API，限制在台南市範圍內。</p>
+  </div>
+
+  <div id="map"></div>
+  <div class="legend">
+    <div><span class="dot" style="background:#7C89B8; color:#7C89B8;"></span>節點（戶外）</div>
+    <div><span class="dot" style="background:#5B6690; color:#5B6690;"></span>節點（室內）</div>
+    <div><span class="dot" style="background:#E8B86D; color:#E8B86D;"></span>路線 A</div>
+    <div><span class="dot" style="background:#5EEAD4; color:#5EEAD4;"></span>路線 B（替代路線）</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 設定區：把你自己的金鑰貼在這裡
+// ============================================================
+const MAPBOX_TOKEN = "pk.eyJ1Ijoiam9hbjExbzFvIiwiYSI6ImNtdHNhOW1qdTB3djIyeXEwZHhneTIzd28ifQ.3Sh_20jFtEIc1QsQpA-_pw";       // pk.xxxx...
+const SUPABASE_URL = "https://azlxwxvfgmtcwbwugpxg.supabase.co";       // https://xxxx.supabase.co
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6bHh3eHZmZ210Y3did3VncHhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NDYxMzAsImV4cCI6MjEwNDQyMjEzMH0.gSoLaPqffkJ3Xo_sEKDBCp0mWoW-ab5xY4OJ6pacB2M";
+
+// 台南市概略範圍，讓 Geocoding 搜尋結果優先落在這個框內
+const TAINAN_BBOX = [120.02, 22.85, 120.55, 23.35]; // [minLng, minLat, maxLng, maxLat]
+
+// ------------------------------------------------------------
+// Header 流星動畫
+// ------------------------------------------------------------
+(function spawnMeteors() {
+  const layer = document.getElementById("meteorLayer");
+  for (let i = 0; i < 10; i++) {
+    const m = document.createElement("div");
+    m.className = "meteor";
+    m.style.top = (Math.random() * 40 - 20) + "px";
+    m.style.left = (Math.random() * 100) + "%";
+    m.style.animationDuration = (3 + Math.random() * 4) + "s";
+    m.style.animationDelay = (Math.random() * 6) + "s";
+    layer.appendChild(m);
+  }
+})();
+
+// ------------------------------------------------------------
+// 內建示範資料（Supabase 尚未設定金鑰時的備援）
+// ------------------------------------------------------------
+const fallbackCoolPoints = [
+  { placename: "安平樹屋",            lat: 22.9976, lng: 120.1603, isoutdoor: true  },
+  { placename: "台南市美術館 2館",     lat: 22.9915, lng: 120.2019, isoutdoor: false },
+  { placename: "台南市立圖書館新總館", lat: 22.9843, lng: 120.2181, isoutdoor: false },
+  { placename: "台南公園",            lat: 22.9972, lng: 120.2131, isoutdoor: true  },
+  { placename: "德記洋行",            lat: 22.9982, lng: 120.1608, isoutdoor: true  },
+  { placename: "赤崁樓",              lat: 22.9968, lng: 120.2027, isoutdoor: true  },
+  { placename: "億載金城",            lat: 22.9767, lng: 120.1584, isoutdoor: true  },
+  { placename: "台南火車站",          lat: 22.9974, lng: 120.2126, isoutdoor: false },
+];
+
+let coolPoints = [];
+const dataStatusEl = document.getElementById("dataStatus");
+const dataStatusMobileEl = document.getElementById("dataStatusMobile");
+
+function keysConfigured() {
+  return MAPBOX_TOKEN !== "YOUR_MAPBOX_TOKEN_HERE" &&
+    SUPABASE_URL !== "YOUR_SUPABASE_URL_HERE" &&
+    SUPABASE_ANON_KEY !== "YOUR_SUPABASE_ANON_KEY_HERE";
+}
+
+async function loadCoolPoints() {
+  if (!keysConfigured()) {
+    coolPoints = fallbackCoolPoints;
+    const msg = "尚未設定 Mapbox / Supabase 金鑰，使用內建示範資料。";
+    dataStatusEl.textContent = msg;
+    dataStatusMobileEl.textContent = msg;
+    return;
+  }
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data, error } = await client.from("cool_points").select("*");
+    if (error || !data || data.length === 0) throw error || new Error("empty");
+    coolPoints = data;
+    const msg = `已從 Supabase 讀取 ${data.length} 筆節點資料。`;
+    dataStatusEl.textContent = msg; dataStatusEl.classList.add("live");
+    dataStatusMobileEl.textContent = msg;
+  } catch (err) {
+    console.warn("Supabase 讀取失敗，改用內建示範資料。", err);
+    coolPoints = fallbackCoolPoints;
+    const msg = "Supabase 連線失敗，改用內建示範資料。";
+    dataStatusEl.textContent = msg;
+    dataStatusMobileEl.textContent = msg;
+  }
+}
+
+// ============================================================
+// 地圖初始化
+// ============================================================
+let map;
+
+function initMap() {
+  mapboxgl.accessToken = MAPBOX_TOKEN;
+  const useFallbackStyle = !keysConfigured();
+
+  map = new mapboxgl.Map({
+    container: "map",
+    style: useFallbackStyle ? { version: 8, sources: {}, layers: [], glyphs: "" } : "mapbox://styles/mapbox/dark-v11",
+    center: [120.19, 22.995],
+    zoom: 12.5,
+    attributionControl: true,
+  });
+
+  if (useFallbackStyle) {
+    document.getElementById("map").insertAdjacentHTML("beforeend",
+      `<div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+        background:#0A0C16; color:#8890AC; font-size:13px; padding:20px; text-align:center;">
+        尚未設定 Mapbox Token，地圖底圖無法載入。<br/>請在程式碼頂端的 MAPBOX_TOKEN 貼上你的金鑰。
+      </div>`);
+    return;
+  }
+
+  map.on("load", () => {
+    renderCoolPointsLayer();
+    renderChips();
+    wireLayerToggles();
+  });
+}
+
+// ============================================================
+// 圖層開關（節點／人行道），桌面與手機兩組 checkbox 保持同步
+// ============================================================
+function wireCheckboxPair(id1, id2, onChange) {
+  const el1 = document.getElementById(id1);
+  const el2 = document.getElementById(id2);
+  const sync = (checked, skip) => {
+    if (el1 && el1 !== skip) el1.checked = checked;
+    if (el2 && el2 !== skip) el2.checked = checked;
+  };
+  [el1, el2].forEach((el) => {
+    if (!el) return;
+    el.addEventListener("change", () => {
+      sync(el.checked, el);
+      onChange(el.checked);
+    });
+  });
+}
+
+let sidewalksLoaded = false;
+let sidewalksAvailable = false;
+
+function setSidewalkHint(text) {
+  ["sidewalkHint", "sidewalkHintMobile"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  });
+}
+
+async function ensureSidewalksLoaded() {
+  if (sidewalksLoaded) return sidewalksAvailable;
+  sidewalksLoaded = true;
+
+  if (!keysConfigured()) {
+    setSidewalkHint("尚未設定 Supabase 金鑰，無法讀取人行道資料。");
+    return false;
+  }
+  try {
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data, error } = await client.from("sidewalks_geojson").select("*");
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      setSidewalkHint("Supabase 裡 sidewalks 資料表目前是空的，還沒有人行道資料可以顯示（參考 schema.sql 底部的匯入步驟）。");
+      return false;
+    }
+
+    const features = data.map((row) => ({
+      type: "Feature",
+      geometry: JSON.parse(row.geojson),
+      properties: {
+        road_name: row.road_name || "",
+        effective_width_m: row.effective_width_m,
+        district: row.district || "",
+      },
+    }));
+
+    map.addSource("sidewalks", { type: "geojson", data: { type: "FeatureCollection", features } });
+    // 實際資料是面（MultiPolygon），不是線，所以用 fill + 邊框線兩層疊出來，比純線條更符合資料本身的意義
+    map.addLayer({
+      id: "sidewalks-fill", type: "fill", source: "sidewalks",
+      layout: { visibility: "none" },
+      paint: { "fill-color": "#8890AC", "fill-opacity": 0.35 },
+    });
+    map.addLayer({
+      id: "sidewalks-outline", type: "line", source: "sidewalks",
+      layout: { visibility: "none", "line-join": "round", "line-cap": "round" },
+      paint: { "line-color": "#8890AC", "line-width": 1, "line-opacity": 0.7 },
+    });
+
+    const sidewalkPopup = new mapboxgl.Popup({ closeButton: false, offset: 8 });
+    map.on("mouseenter", "sidewalks-fill", (e) => {
+      map.getCanvas().style.cursor = "pointer";
+      const p = e.features[0].properties;
+      const widthText = p.effective_width_m ? `有效寬度 ${Number(p.effective_width_m).toFixed(1)} 公尺` : "寬度資料缺";
+      sidewalkPopup.setLngLat(e.lngLat).setText(`${p.road_name || "（無路名）"}｜${widthText}`).addTo(map);
+    });
+    map.on("mouseleave", "sidewalks-fill", () => { map.getCanvas().style.cursor = ""; sidewalkPopup.remove(); });
+
+    setSidewalkHint(`已讀取 ${data.length} 段人行道資料。`);
+    return true;
+  } catch (err) {
+    console.warn("人行道資料讀取失敗", err);
+    setSidewalkHint("人行道資料讀取失敗，可能是 sidewalks_geojson 這個 view 還沒建立（先執行過 schema.sql 最新版本）。");
+    return false;
+  }
+}
+
+function wireLayerToggles() {
+  wireCheckboxPair("toggleCoolPoints", "toggleCoolPointsMobile", (checked) => {
+    const vis = checked ? "visible" : "none";
+    ["cool-points-halo", "cool-points-core"].forEach((id) => {
+      if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", vis);
+    });
+  });
+
+  wireCheckboxPair("toggleSidewalks", "toggleSidewalksMobile", async (checked) => {
+    if (!checked) {
+      ["sidewalks-fill", "sidewalks-outline"].forEach((id) => {
+        if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", "none");
+      });
+      return;
+    }
+    const available = await ensureSidewalksLoaded();
+    if (available) {
+      ["sidewalks-fill", "sidewalks-outline"].forEach((id) => {
+        if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", "visible");
+      });
+    } else {
+      // 沒有資料就把開關撥回去，避免使用者以為打開了卻什麼都看不到
+      ["toggleSidewalks", "toggleSidewalksMobile"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.checked = false;
+      });
+    }
+  });
+}
+
+function renderCoolPointsLayer() {
+  const geojson = {
+    type: "FeatureCollection",
+    features: coolPoints.map((p) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [p.lng, p.lat] },
+      properties: { placename: p.placename, isoutdoor: !!p.isoutdoor, highlightColor: null },
+    })),
+  };
+  if (map.getSource("cool-points")) { map.getSource("cool-points").setData(geojson); return; }
+
+  map.addSource("cool-points", { type: "geojson", data: geojson });
+  map.addLayer({
+    id: "cool-points-halo", type: "circle", source: "cool-points",
+    paint: {
+      "circle-radius": 12, "circle-blur": 1, "circle-opacity": 0.45,
+      "circle-color": ["case", ["!=", ["get", "highlightColor"], null], ["get", "highlightColor"], ["get", "isoutdoor"], "#7C89B8", "#5B6690"],
+    },
+  });
+  map.addLayer({
+    id: "cool-points-core", type: "circle", source: "cool-points",
+    paint: {
+      "circle-radius": 3.5,
+      "circle-color": ["case", ["!=", ["get", "highlightColor"], null], ["get", "highlightColor"], ["get", "isoutdoor"], "#7C89B8", "#5B6690"],
+      "circle-stroke-width": 1, "circle-stroke-color": "#0A0C16",
+    },
+  });
+  const popup = new mapboxgl.Popup({ closeButton: false, offset: 10 });
+  map.on("mouseenter", "cool-points-core", (e) => {
+    map.getCanvas().style.cursor = "pointer";
+    popup.setLngLat(e.features[0].geometry.coordinates).setText(e.features[0].properties.placename).addTo(map);
+  });
+  map.on("mouseleave", "cool-points-core", () => { map.getCanvas().style.cursor = ""; popup.remove(); });
+}
+
+// 快選示範地標（桌面／手機共用同一組資料）
+function renderChips() {
+  const chipRow = document.getElementById("chipRow");
+  chipRow.innerHTML = "";
+  coolPoints.slice(0, 6).forEach((p) => {
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    chip.textContent = p.placename;
+    chip.addEventListener("click", () => {
+      setSelected(lastFocusedField, { name: p.placename, lat: p.lat, lng: p.lng });
+    });
+    chipRow.appendChild(chip);
+  });
+}
+
+// ============================================================
+// 搜尋（Mapbox Geocoding API）
+// ============================================================
+let selectedStart = null; // { name, lat, lng }
+let selectedEnd = null;
+let lastFocusedField = "start"; // 追蹤使用者最後點的是起點還是終點欄位，快選標籤依此填入
+
+["startInput", "startInputMobile"].forEach((id) => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener("focus", () => { lastFocusedField = "start"; });
+});
+["endInput", "endInputMobile"].forEach((id) => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener("focus", () => { lastFocusedField = "end"; });
+});
+
+function setSelected(which, point) {
+  if (which === "start") {
+    selectedStart = point;
+    document.getElementById("startInput").value = point.name;
+    document.getElementById("startInputMobile").value = point.name;
+  } else {
+    selectedEnd = point;
+    document.getElementById("endInput").value = point.name;
+    document.getElementById("endInputMobile").value = point.name;
+  }
+}
+
+let debounceTimer = null;
+async function geocode(query) {
+  if (!keysConfigured() || query.trim().length < 2) return [];
+  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json` +
+    `?access_token=${MAPBOX_TOKEN}&country=tw&language=zh-Hant&bbox=${TAINAN_BBOX.join(",")}&limit=6`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    return (data.features || []).map((f) => ({
+      name: f.place_name, lat: f.center[1], lng: f.center[0],
+    }));
+  } catch (err) {
+    console.warn("Geocoding 失敗", err);
+    return [];
+  }
+}
+
+function wireSearchField(inputId, suggestionsId, which) {
+  const input = document.getElementById(inputId);
+  const box = document.getElementById(suggestionsId);
+  if (!input) return;
+
+  input.addEventListener("input", () => {
+    const q = input.value;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(async () => {
+      const results = await geocode(q);
+      if (results.length === 0) { box.classList.remove("open"); box.innerHTML = ""; return; }
+      box.innerHTML = "";
+      results.forEach((r) => {
+        const item = document.createElement("div");
+        item.className = "suggestion-item";
+        item.textContent = r.name;
+        item.addEventListener("click", () => {
+          setSelected(which, r);
+          box.classList.remove("open");
+        });
+        box.appendChild(item);
+      });
+      box.classList.add("open");
+    }, 300);
+  });
+
+  input.addEventListener("blur", () => setTimeout(() => box.classList.remove("open"), 150));
+}
+
+wireSearchField("startInput", "startSuggestions", "start");
+wireSearchField("endInput", "endSuggestions", "end");
+wireSearchField("startInputMobile", "startSuggestionsMobile", "start");
+wireSearchField("endInputMobile", "endSuggestionsMobile", "end");
+
+// ============================================================
+// 路線規劃（OSRM）＋ 流動光跡動畫
+// ============================================================
+const dashArraySequence = [
+  [0,4,3],[0.5,4,2.5],[1,4,2],[1.5,4,1.5],[2,4,1],[2.5,4,0.5],[3,4,0],
+  [0,0.5,3,3.5],[0,1,3,3],[0,1.5,3,2.5],[0,2,3,2],[0,2.5,3,1.5],[0,3,3,1],[0,3.5,3,0.5],
+];
+let dashStep = 0, dashAnimationRunning = false;
+const activeFlowLayers = [];
+
+function animateDash(timestamp) {
+  if (activeFlowLayers.length === 0) { dashAnimationRunning = false; return; }
+  const newStep = parseInt((timestamp / 60) % dashArraySequence.length);
+  if (newStep !== dashStep) {
+    activeFlowLayers.forEach((id) => { if (map.getLayer(id)) map.setPaintProperty(id, "line-dasharray", dashArraySequence[newStep]); });
+    dashStep = newStep;
+  }
+  requestAnimationFrame(animateDash);
+}
+
+function clearRoutes() {
+  ["route-a", "route-b"].forEach((key) => {
+    [`${key}-glow`, `${key}-flow`].forEach((layerId) => { if (map.getLayer(layerId)) map.removeLayer(layerId); });
+    if (map.getSource(key)) map.removeSource(key);
+  });
+  activeFlowLayers.length = 0;
+  renderCoolPointsLayer();
+}
+
+async function planRoutes() {
+  const statusEl = document.getElementById("status");
+  const resultsEl = document.getElementById("results");
+  const resultsMobileEl = document.getElementById("resultsMobile");
+  const btn = document.getElementById("planBtn");
+  const btnMobile = document.getElementById("planBtnMobile");
+
+  if (!selectedStart || !selectedEnd) {
+    const msg = "請先從搜尋建議或快選標籤選擇起訖點。";
+    statusEl.textContent = msg;
+    return;
+  }
+  if (selectedStart.lat === selectedEnd.lat && selectedStart.lng === selectedEnd.lng) {
+    statusEl.textContent = "請選擇不同的起訖點。";
+    return;
+  }
+
+  clearRoutes();
+  btn.disabled = true; btnMobile.disabled = true;
+  statusEl.textContent = "正在向 OSRM 步行路網服務要求路線…";
+  resultsEl.innerHTML = ""; resultsMobileEl.innerHTML = "";
+
+  const coordStr = `${selectedStart.lng},${selectedStart.lat};${selectedEnd.lng},${selectedEnd.lat}`;
+  const url = `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${coordStr}?alternatives=true&overview=full&geometries=geojson&steps=false`;
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.routes || data.routes.length === 0) {
+      statusEl.textContent = "沒有取得路線，請換一組起訖點試試。";
+      btn.disabled = false; btnMobile.disabled = false;
+      return;
+    }
+
+    const colors = ["#E8B86D", "#5EEAD4"];
+    const routesToShow = data.routes.slice(0, 2);
+    const coveredByRoute = [];
+    const allLngLat = [];
+
+    routesToShow.forEach((route, idx) => {
+      const key = idx === 0 ? "route-a" : "route-b";
+      const color = colors[idx];
+      map.addSource(key, { type: "geojson", data: { type: "Feature", geometry: route.geometry } });
+      map.addLayer({ id: `${key}-glow`, type: "line", source: key, layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": color, "line-width": 9, "line-opacity": 0.22, "line-blur": 3 } });
+      map.addLayer({ id: `${key}-flow`, type: "line", source: key, layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": color, "line-width": 3, "line-opacity": 0.95 } });
+      activeFlowLayers.push(`${key}-flow`);
+
+      const turfLine = turf.lineString(route.geometry.coordinates);
+      const covered = coolPoints.filter((p) => turf.pointToLineDistance(turf.point([p.lng, p.lat]), turfLine, { units: "meters" }) <= 150);
+      coveredByRoute.push({ idx, covered, route });
+      route.geometry.coordinates.forEach((c) => allLngLat.push(c));
+    });
+
+    if (!dashAnimationRunning) { dashAnimationRunning = true; requestAnimationFrame(animateDash); }
+
+    const highlightFeatures = coolPoints.map((p) => {
+      const hit = coveredByRoute.find((r) => r.covered.includes(p));
+      return { type: "Feature", geometry: { type: "Point", coordinates: [p.lng, p.lat] },
+        properties: { placename: p.placename, isoutdoor: !!p.isoutdoor, highlightColor: hit ? colors[hit.idx] : null } };
+    });
+    map.getSource("cool-points").setData({ type: "FeatureCollection", features: highlightFeatures });
+
+    coveredByRoute.forEach(({ idx, covered, route }) => {
+      const km = (route.distance / 1000).toFixed(2);
+      const mins = Math.round(route.duration / 60);
+      const cardHtml = `
+        <div class="route-card">
+          <h3><span class="dot" style="background:${colors[idx]}; color:${colors[idx]};"></span>路線 ${idx === 0 ? "A" : "B"}</h3>
+          <div class="stat">距離：<b>${km} 公里</b></div>
+          <div class="stat">預估時間：<b>${mins} 分鐘</b></div>
+          <div class="stat">沿途節點覆蓋：<b>${covered.length} 處</b>${covered.length ? "（" + covered.map((c) => c.placename).join("、") + "）" : ""}</div>
+        </div>`;
+      resultsEl.insertAdjacentHTML("beforeend", cardHtml);
+      resultsMobileEl.insertAdjacentHTML("beforeend", cardHtml);
+    });
+
+    if (routesToShow.length === 1) {
+      const note = `<p class="hint">此起訖點目前只取得一條可行走路線，可換一組起訖點測試替代路線比較。</p>`;
+      resultsEl.insertAdjacentHTML("beforeend", note);
+      resultsMobileEl.insertAdjacentHTML("beforeend", note);
+    }
+
+    const bounds = allLngLat.reduce((b, c) => b.extend(c), new mapboxgl.LngLatBounds(allLngLat[0], allLngLat[0]));
+    map.fitBounds(bounds, { padding: window.innerWidth <= 860 ? 40 : 60 });
+
+    statusEl.textContent = "完成。";
+    // 手機版規劃完自動展開底部抽屜，方便直接看結果
+    if (window.innerWidth <= 860) document.getElementById("detailSheet").classList.add("open");
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = "路線服務暫時無法使用，請稍後再試（可能是公開示範伺服器忙碌中）。";
+  }
+  btn.disabled = false; btnMobile.disabled = false;
+}
+
+document.getElementById("planBtn").addEventListener("click", planRoutes);
+document.getElementById("planBtnMobile").addEventListener("click", planRoutes);
+
+// 手機版底部抽屜開關
+document.getElementById("sheetToggle").addEventListener("click", () => {
+  document.getElementById("detailSheet").classList.toggle("open");
+});
+
+// ============================================================
+// 啟動
+// ============================================================
+(async function start() {
+  await loadCoolPoints();
+  initMap();
+})();
+</script>
+
+</body>
+</html>
