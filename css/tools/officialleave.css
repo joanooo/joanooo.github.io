@@ -100,3 +100,121 @@
   .individual-card { box-shadow: none; break-inside: avoid; }
   .btn-copy, .btn-copy-all { display: none !important; }
 }
+
+/* =========================================
+   新增功能樣式：地圖/日曆按鈕、時間下拉、印章、彈窗
+   ========================================= */
+
+/* --- 輸入框旁的小按鈕 --- */
+.input-with-btn { display: flex; gap: 6px; }
+.input-with-btn input { flex: 1; }
+.btn-mini {
+  flex-shrink: 0; width: 40px; background: #1d4ed8; border: none;
+  border-radius: 6px; color: white; cursor: pointer; font-size: 16px;
+}
+.btn-mini:hover { background: #1e40af; }
+
+/* --- 時間下拉 --- */
+.time-select-row { display: flex; align-items: center; gap: 4px; color: #e2e8f0; font-family: sans-serif; }
+.time-select-row select {
+  background: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 6px;
+  padding: 6px 6px; font-size: 14px;
+}
+
+/* --- 計畫編號下拉沿用 select 樣式 --- */
+#projectNo, #projectNoCustom { width: 100%; }
+#projectNo { text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+
+/* --- 匯出 PNG 按鈕 --- */
+.btn-png { padding: 9px 22px; background: #7c3aed; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-family: sans-serif; font-weight: bold; }
+.btn-png:hover { background: #6d28d9; }
+
+/* --- 通用彈窗遮罩 --- */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  z-index: 999; align-items: center; justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+
+/* --- 小日曆彈窗 --- */
+.calendar-popup {
+  background: #1e293b; border-radius: 10px; padding: 16px; width: 280px;
+  font-family: sans-serif; color: #e2e8f0; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+}
+.calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-weight: bold; }
+.calendar-header button { background: #334155; border: none; color: #e2e8f0; border-radius: 6px; width: 30px; height: 30px; cursor: pointer; }
+.calendar-header button:hover { background: #475569; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 13px; }
+.calendar-grid .cal-dow { color: #94a3b8; font-weight: bold; padding: 4px 0; }
+.calendar-grid .cal-day {
+  padding: 7px 0; border-radius: 6px; cursor: pointer; background: #0f172a;
+}
+.calendar-grid .cal-day:hover { background: #3b82f6; }
+.calendar-grid .cal-day.empty { background: transparent; cursor: default; }
+.calendar-grid .cal-day.selected { background: #2563eb; font-weight: bold; }
+.calendar-grid .cal-day.today { outline: 1px solid #7c3aed; }
+
+/* --- 台灣地圖彈窗 --- */
+.map-popup {
+  background: #1e293b; border-radius: 10px; padding: 16px; width: 360px; max-width: 92vw;
+  font-family: sans-serif; color: #e2e8f0; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  max-height: 86vh; overflow-y: auto;
+}
+.map-popup-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-weight: bold; }
+.map-close { background: #334155; border: none; color: #e2e8f0; border-radius: 6px; width: 28px; height: 28px; cursor: pointer; }
+.map-close:hover { background: #475569; }
+.tw-map-svg { width: 100%; height: auto; display: block; margin-bottom: 8px; background: #0f172a; border-radius: 8px; }
+.tw-county { fill: #334155; stroke: #64748b; stroke-width: 1; cursor: pointer; transition: fill 0.15s; }
+.tw-county:hover { fill: #3b82f6; stroke: #93c5fd; }
+.tw-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+.tw-list button {
+  background: #0f172a; border: 1px solid #334155; color: #e2e8f0; border-radius: 6px;
+  padding: 6px 4px; font-size: 12px; cursor: pointer;
+}
+.tw-list button:hover { background: #3b82f6; border-color: #3b82f6; }
+
+/* --- 印章樣式（橫式：左側兩行小字＋右側大字） --- */
+.stamp-wrap {
+  position: absolute; text-align: center; white-space: nowrap;
+  transform: rotate(-7deg);
+  opacity: 0.85;
+  mix-blend-mode: multiply;
+}
+.stamp-box {
+  border: 2px solid #c81e2c;
+  border-radius: 3px;
+  padding: 3px 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(200,30,44,0.02);
+}
+.stamp-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.15;
+  font-size: 9px;
+  color: #c81e2c;
+  font-family: '標楷體', 'DFKai-SB', serif;
+  letter-spacing: 0.5px;
+  text-align: left;
+  border-right: 1.5px solid #c81e2c;
+  padding-right: 5px;
+}
+.stamp-right {
+  font-size: 20px;
+  font-weight: bold;
+  color: #c81e2c;
+  font-family: '標楷體', 'DFKai-SB', serif;
+  letter-spacing: 2px;
+}
+.stamp-note {
+  margin-top: 2px; font-size: 8px; color: #c81e2c;
+  font-family: '標楷體', 'DFKai-SB', serif;
+}
+.cert-sign-wrap { position: relative; }
+
+@media print {
+  .modal-overlay { display: none !important; }
+}

@@ -4,11 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>差假證明產生器</title>
-  
+
   <!-- 引入共用與專屬 CSS -->
   <link rel="stylesheet" href="../css/global.css">
   <link rel="stylesheet" href="../css/layout.css">
   <link rel="stylesheet" href="../css/tools/officialleave.css">
+
+  <!-- 匯出 PNG 用 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 </head>
 <body>
 
@@ -27,24 +30,32 @@
   <h1>📋 差假證明產生器</h1>
 
   <div>
-    <div class="section-title">固定資訊</div>
-    <div class="fixed-info">
-      系所：<span>電機系</span><br>
-      職稱：<span>助理教授</span><br>
-      簽署人：<span>陳靜茹</span>
-    </div>
-  </div>
-
-  <div>
     <div class="section-title">計畫資訊</div>
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div class="form-group">
         <label>計畫編號</label>
-        <input type="text" id="projectNo" value="114-851" placeholder="例：114-851">
+        <select id="projectNo" onchange="onProjectChange()">
+          <option value="114-1073">114-1073｜微氣象監測結合遙測影像與機器學習於大紫蝶棲地復育之研究</option>
+          <option value="114-203">114-203｜低碳洗掃街車隊最佳路線管理系統</option>
+          <option value="114-3014-1">114-3014-1｜利用機器學習優化街道清掃車路線：提高城市道路維護的效率和可持續性(1/3)</option>
+          <option value="114-3014">114-3014｜利用機器學習優化街道清掃車路線：提高城市道路維護的效率和可持續性(1/3)</option>
+          <option value="114-740">114-740｜以科技導入遊蕩犬管制技術計畫</option>
+          <option value="114-780">114-780｜建立AIoT蟲害預警模型</option>
+          <option value="114-831">114-831｜學甲與人犬衝突熱區無人機航拍遊蕩犬族群工作</option>
+          <option value="114-832">114-832｜學甲多功能教育園區無人機航拍建構</option>
+          <option value="114-851" selected>114-851｜嘉義縣人犬衝突及環境髒亂熱區智慧圍籬排犬示範計畫</option>
+          <option value="115-1056">115-1056｜邊緣運算導向之動態空間感知與生態干擾回饋機制研究</option>
+          <option value="115-788">115-788｜以無人系統搭載AI技術應用於海洋水質採樣及污染調查之技術開發</option>
+          <option value="__custom__">✏️ 自訂輸入...</option>
+        </select>
+        <input type="text" id="projectNoCustom" placeholder="輸入計畫編號" style="display:none;margin-top:8px;">
       </div>
       <div class="form-group">
         <label>出差地點</label>
-        <input type="text" id="location" value="嘉義縣" placeholder="例：嘉義縣">
+        <div class="input-with-btn">
+          <input type="text" id="location" value="嘉義縣" placeholder="例：嘉義縣">
+          <button type="button" class="btn-mini" onclick="openMapModal()" title="從地圖選擇">🗺️</button>
+        </div>
       </div>
       <div class="form-group">
         <label>任務說明</label>
@@ -58,18 +69,39 @@
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div class="form-group">
         <label>出差日期</label>
-        <input type="date" id="tripDate" value="2026-03-24">
+        <div class="input-with-btn">
+          <input type="text" id="tripDate" readonly placeholder="選擇日期" onclick="openCalendar('tripDate')">
+          <button type="button" class="btn-mini" onclick="openCalendar('tripDate')" title="選擇日期">📅</button>
+        </div>
       </div>
       <div class="time-row">
         <div class="form-group">
           <label>開始時間</label>
-          <input type="time" id="timeStart" value="08:00">
+          <div class="time-select-row">
+            <select id="timeStartH" onchange="syncTime('Start')"></select> :
+            <select id="timeStartM" onchange="syncTime('Start')"></select>
+          </div>
+          <input type="hidden" id="timeStart" value="08:00">
         </div>
         <div class="form-group">
           <label>結束時間</label>
-          <input type="time" id="timeEnd" value="18:00">
+          <div class="time-select-row">
+            <select id="timeEndH" onchange="syncTime('End')"></select> :
+            <select id="timeEndM" onchange="syncTime('End')"></select>
+          </div>
+          <input type="hidden" id="timeEnd" value="18:00">
         </div>
       </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-title">印章設定</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <label class="member-checkbox" style="width:100%;">
+        <input type="checkbox" id="stampEnabled" checked onchange="rerenderIfPresent()">
+        自動加蓋印章
+      </label>
     </div>
   </div>
 
@@ -94,8 +126,9 @@
       <button class="mode-tab" id="tabIndividual" onclick="switchMode('individual')">📝 個人文字</button>
     </div>
     <button class="btn-print" id="btnPrint" onclick="window.print()">🖨️ 列印 / 存成 PDF</button>
+    <button class="btn-png" id="btnPng" onclick="exportPng()">📷 匯出 PNG</button>
     <button class="btn-copy-all" id="btnCopyAll" onclick="copyAll()" style="display:none;">📋 複製全部文字</button>
-    
+
     <div class="zoom-controls" id="zoomControls">
       <button class="zoom-btn" onclick="changeZoom(-10)">−</button>
       <span class="zoom-label" id="zoomLabel">100%</span>
@@ -108,6 +141,29 @@
     <div id="previewContent">
       <div class="placeholder">⬅️ 填寫左側資訊後<br>點擊下方按鈕產生內容</div>
     </div>
+  </div>
+</div>
+
+<!-- 小日曆彈窗 -->
+<div class="modal-overlay" id="calendarOverlay" onclick="closeCalendar(event)">
+  <div class="calendar-popup" onclick="event.stopPropagation()">
+    <div class="calendar-header">
+      <button type="button" onclick="calShiftMonth(-1)">◀</button>
+      <span id="calTitle"></span>
+      <button type="button" onclick="calShiftMonth(1)">▶</button>
+    </div>
+    <div class="calendar-grid" id="calGrid"></div>
+  </div>
+</div>
+
+<!-- 台灣地圖彈窗 -->
+<div class="modal-overlay" id="mapOverlay" onclick="closeMapModal(event)">
+  <div class="map-popup" onclick="event.stopPropagation()">
+    <div class="map-popup-header">
+      <span>🗺️ 選擇出差地點</span>
+      <button type="button" class="map-close" onclick="closeMapModal()">✕</button>
+    </div>
+    <div id="taiwanMapContainer"></div>
   </div>
 </div>
 
