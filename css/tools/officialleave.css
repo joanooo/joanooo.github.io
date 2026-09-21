@@ -3,6 +3,7 @@
    ========================================= */
 .time-row { display: flex; gap: 8px; }
 .time-row .form-group { flex: 1; }
+.time-row > .input-with-btn { flex: 1; min-width: 0; }
 
 .member-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .member-checkbox {
@@ -54,7 +55,7 @@
 
 /* --- A4 預覽 --- */
 .a4-wrapper { width: 794px; transform-origin: top center; transition: transform 0.2s; }
-.a4-page { width: 794px; background: white; padding: 60px 70px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border-radius: 4px; }
+.a4-page { width: 794px; background: white; padding: 60px 70px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border-radius: 4px; font-family: "LXGW WenKai TC", "標楷體", "DFKai-SB", serif; }
 .cert-title { text-align: center; font-size: 26px; font-weight: bold; letter-spacing: 6px; color: #1e3a5f; margin-bottom: 30px; padding-bottom: 14px; border-bottom: 2px solid #1e3a5f; }
 .cert-body { font-size: 17px; line-height: 2.6; color: #111; text-align: justify; }
 .cert-body .hl { font-weight: bold; text-decoration: underline; text-underline-offset: 3px; }
@@ -67,7 +68,7 @@
 .individual-card { background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
 .individual-card-header { background: #1e3a5f; color: white; padding: 10px 16px; font-size: 15px; font-weight: bold; font-family: sans-serif; display: flex; justify-content: space-between; align-items: center; }
 .individual-card-body { padding: 16px; position: relative; }
-.individual-text { font-size: 15px; line-height: 2.2; color: #111; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px 16px; white-space: pre-wrap; word-break: break-all; font-family: '標楷體', 'DFKai-SB', serif; }
+.individual-text { font-size: 15px; line-height: 2.2; color: #111; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px 16px; white-space: pre-wrap; word-break: break-all; font-family: "LXGW WenKai TC", '標楷體', 'DFKai-SB', serif; }
 .btn-copy { padding: 6px 14px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-family: sans-serif; font-weight: bold; transition: background 0.15s; white-space: nowrap; }
 .btn-copy:hover { background: #2563eb; }
 .btn-copy.copied { background: #059669; }
@@ -196,7 +197,7 @@
   line-height: 1.15;
   font-size: 9px;
   color: #c81e2c;
-  font-family: '標楷體', 'DFKai-SB', serif;
+  font-family: "LXGW WenKai TC", '標楷體', 'DFKai-SB', serif;
   letter-spacing: 0.5px;
   text-align: left;
   border-right: 1.5px solid #c81e2c;
@@ -206,12 +207,12 @@
   font-size: 20px;
   font-weight: bold;
   color: #c81e2c;
-  font-family: '標楷體', 'DFKai-SB', serif;
+  font-family: "LXGW WenKai TC", '標楷體', 'DFKai-SB', serif;
   letter-spacing: 2px;
 }
 .stamp-note {
   margin-top: 2px; font-size: 8px; color: #c81e2c;
-  font-family: '標楷體', 'DFKai-SB', serif;
+  font-family: "LXGW WenKai TC", '標楷體', 'DFKai-SB', serif;
 }
 .cert-sign-wrap { position: relative; }
 

@@ -10,6 +10,9 @@
   <link rel="stylesheet" href="../css/layout.css">
   <link rel="stylesheet" href="../css/tools/officialleave.css">
 
+  <!-- 標楷體網路字體（避免手機沒有標楷體導致跑版），採用開源「霞鹜文楷 LXGW WenKai」 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-tc-webfont@1.0.0/style.css">
+
   <!-- 匯出 PNG 用 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 </head>
@@ -59,7 +62,14 @@
       </div>
       <div class="form-group">
         <label>任務說明</label>
-        <input type="text" id="task" value="現地勘查" placeholder="例：現地勘查、協助感測器安裝">
+        <select id="task" onchange="onTaskChange()">
+          <option value="現地勘查">現地勘查</option>
+          <option value="計畫討論">計畫討論</option>
+          <option value="設備測試">設備測試</option>
+          <option value="設備調整">設備調整</option>
+          <option value="__custom__">✏️ 自訂輸入...</option>
+        </select>
+        <input type="text" id="taskCustom" placeholder="輸入任務說明" style="display:none;margin-top:8px;">
       </div>
     </div>
   </div>
@@ -68,10 +78,17 @@
     <div class="section-title">日期 &amp; 時間</div>
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div class="form-group">
-        <label>出差日期</label>
-        <div class="input-with-btn">
-          <input type="text" id="tripDate" readonly placeholder="選擇日期" onclick="openCalendar('tripDate')">
-          <button type="button" class="btn-mini" onclick="openCalendar('tripDate')" title="選擇日期">📅</button>
+        <label>出差日期（可跨日）</label>
+        <div class="time-row">
+          <div class="input-with-btn">
+            <input type="text" id="tripDateStart" readonly placeholder="起始日期" onclick="openCalendar('tripDateStart')">
+            <button type="button" class="btn-mini" onclick="openCalendar('tripDateStart')" title="選擇起始日期">📅</button>
+          </div>
+          <span style="color:#94a3b8;align-self:center;">～</span>
+          <div class="input-with-btn">
+            <input type="text" id="tripDateEnd" readonly placeholder="結束日期" onclick="openCalendar('tripDateEnd')">
+            <button type="button" class="btn-mini" onclick="openCalendar('tripDateEnd')" title="選擇結束日期">📅</button>
+          </div>
         </div>
       </div>
       <div class="time-row">

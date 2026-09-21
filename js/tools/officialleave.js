@@ -1,7 +1,7 @@
 /* =========================================
    差假證明產生器邏輯 (Official Leave JS)
    ========================================= */
-const DEFAULT_MEMBERS = ['石廷安','許凱睿','魏笠元','吳柏諺','林承翰','李昱緯','戴琮儒','林緯哲','劉顓賢','翁浚哲','嚴榆翔','劉念安','鄭仁靖','張珍珠'];
+const DEFAULT_MEMBERS = ['石廷安','許凱睿','魏笠元','吳柏諺','林承翰','李昱緯','戴琮儒','林緯哲','劉顓賢','翁浚哲','嚴楡翔','劉念安','鄭仁靖','張珍珠'];
 const WEEKDAYS = ['日','一','二','三','四','五','六'];
 let zoomLevel = 100;
 let currentMode = 'cert';
@@ -43,6 +43,22 @@ function getProjectNo() {
   return sel.value || '（未填）';
 }
 
+/* ---------- 任務說明（下拉 + 自訂） ---------- */
+function onTaskChange() {
+  const sel = document.getElementById('task');
+  const custom = document.getElementById('taskCustom');
+  custom.style.display = sel.value === '__custom__' ? '' : 'none';
+  rerenderIfPresent();
+}
+
+function getTask() {
+  const sel = document.getElementById('task');
+  if (sel.value === '__custom__') {
+    return document.getElementById('taskCustom').value.trim() || '執行相關工作';
+  }
+  return sel.value || '執行相關工作';
+}
+
 /* ---------- 日期格式化 ---------- */
 function formatDate(dateStr) {
   if (!dateStr) return '（未填日期）';
@@ -52,6 +68,14 @@ function formatDate(dateStr) {
   const day = String(d.getDate()).padStart(2, '0');
   const wd = WEEKDAYS[d.getDay()];
   return `${y}/${m}/${day}（${wd}）`;
+}
+
+// 支援跨日：起訖日期相同時只顯示一個日期，不同則顯示區間
+function formatDateRange(startStr, endStr) {
+  if (!startStr && !endStr) return '（未填日期）';
+  if (!endStr || startStr === endStr) return formatDate(startStr);
+  if (!startStr) return formatDate(endStr);
+  return `${formatDate(startStr)} ～ ${formatDate(endStr)}`;
 }
 
 /* ---------- 時間下拉初始化 ---------- */
@@ -135,6 +159,16 @@ function renderCalendar() {
 function selectCalDay(dateStr) {
   if (!calTargetId) return;
   document.getElementById(calTargetId).value = dateStr;
+
+  // 跨日安全防呆：確保結束日期不早於起始日期
+  if (calTargetId === 'tripDateStart') {
+    const endEl = document.getElementById('tripDateEnd');
+    if (endEl && endEl.value && endEl.value < dateStr) endEl.value = dateStr;
+  } else if (calTargetId === 'tripDateEnd') {
+    const startEl = document.getElementById('tripDateStart');
+    if (startEl && startEl.value && startEl.value > dateStr) startEl.value = dateStr;
+  }
+
   closeCalendar();
   rerenderIfPresent();
 }
@@ -249,8 +283,9 @@ function togglePanel() {
 function generate() {
   const projectNo = getProjectNo();
   const location  = document.getElementById('location').value.trim()  || '（未填）';
-  const task      = document.getElementById('task').value.trim()      || '執行相關工作';
-  const tripDate  = document.getElementById('tripDate').value;
+  const task      = getTask();
+  const dateStart = document.getElementById('tripDateStart').value;
+  const dateEnd   = document.getElementById('tripDateEnd').value;
   const timeStart = document.getElementById('timeStart').value || '08:00';
   const timeEnd   = document.getElementById('timeEnd').value   || '18:00';
   const members   = getSelectedMembers();
@@ -258,7 +293,7 @@ function generate() {
   if (members.length === 0) { alert('請至少勾選一位出差人員！'); return; }
 
   const memberStr = members.join('、');
-  const dateStr   = formatDate(tripDate);
+  const dateStr   = formatDateRange(dateStart, dateEnd);
 
   const html = `
     <div class="a4-page">
@@ -294,13 +329,14 @@ function generate() {
 function generateIndividual() {
   const projectNo = getProjectNo();
   const location  = document.getElementById('location').value.trim()  || '（未填）';
-  const task      = document.getElementById('task').value.trim()      || '執行相關工作';
-  const tripDate  = document.getElementById('tripDate').value;
+  const task      = getTask();
+  const dateStart = document.getElementById('tripDateStart').value;
+  const dateEnd   = document.getElementById('tripDateEnd').value;
   const members   = getSelectedMembers();
 
   if (members.length === 0) { alert('請至少勾選一位出差人員！'); return; }
 
-  const dateStr = formatDate(tripDate);
+  const dateStr = formatDateRange(dateStart, dateEnd);
 
   const cards = members.map((name, i) => {
     const text = `為協助校內計畫編號：${projectNo}，於${dateStr}派遣學生 ${name} 赴${location}${task}。`;
@@ -390,7 +426,7 @@ function exportPng() {
 
   html2canvas(target, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(canvas => {
     const link = document.createElement('a');
-    const dateVal = document.getElementById('tripDate').value || 'export';
+    const dateVal = document.getElementById('tripDateStart').value || 'export';
     link.download = `差假證明_${dateVal}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
@@ -411,14 +447,16 @@ window.addEventListener('resize', () => {
 });
 
 function initDefaultDate() {
-  const el = document.getElementById('tripDate');
-  if (!el.value) {
-    const today = new Date();
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, '0');
-    const d = String(today.getDate()).padStart(2, '0');
-    el.value = `${y}-${m}-${d}`;
-  }
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth() + 1).padStart(2, '0');
+  const d = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${y}-${m}-${d}`;
+
+  const startEl = document.getElementById('tripDateStart');
+  const endEl   = document.getElementById('tripDateEnd');
+  if (!startEl.value) startEl.value = todayStr;
+  if (!endEl.value) endEl.value = todayStr;
 }
 
 initMembers();
