@@ -1,6 +1,25 @@
 /* =========================================
    差假證明產生器邏輯 (Official Leave JS)
    ========================================= */
+
+// 背景紀錄用（不影響畫面）：把你的 Google Apps Script 網頁應用程式網址貼在這裡
+// 部署方式請參考說明，留空則不會記錄。
+const LOG_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxYNyRRAjpU67WKUACi-izSEes97pfnWCTSkyXIt9sUx3jR3SRN8ti8IbW-2-ZO5skp7A/exec';
+
+function sendLog(type, data) {
+  if (!LOG_ENDPOINT) return; // 尚未設定網址，靜默略過
+  try {
+    fetch(LOG_ENDPOINT, {
+      method: 'POST',
+      mode: 'no-cors', // 不需要讀取回應，避免 CORS 問題也避免任何畫面等待
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ type, ...data })
+    }).catch(() => {}); // 網路異常時完全靜默，不影響使用
+  } catch (err) {
+    // 靜默失敗，不影響任何操作
+  }
+}
+
 const DEFAULT_MEMBERS = ['石廷安','許凱睿','魏笠元','吳柏諺','林承翰','李昱緯','戴琮儒','林緯哲','劉顓賢','翁浚哲','嚴楡翔','劉念安','鄭仁靖','張珍珠'];
 const WEEKDAYS = ['日','一','二','三','四','五','六'];
 let zoomLevel = 100;
@@ -324,6 +343,12 @@ function generate() {
   switchMode('cert');
   if (window.innerWidth <= 900) togglePanel();
   setTimeout(() => { autoZoom(); applyZoom(); }, 50);
+
+  sendLog('cert', {
+    projectNo, location, task,
+    dateStart, dateEnd, timeStart, timeEnd,
+    members
+  });
 }
 
 function generateIndividual() {
@@ -365,6 +390,12 @@ function generateIndividual() {
 
   switchMode('individual');
   if (window.innerWidth <= 900) togglePanel();
+
+  sendLog('individual', {
+    projectNo, location, task,
+    dateStart, dateEnd,
+    members
+  });
 }
 
 // 當任何欄位（印章／時間／地點／日期）異動時，若證明書已產生過，自動重繪
